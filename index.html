@@ -418,6 +418,7 @@ firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
 const db = firebase.firestore();
 const COLLECTION = 'talleres3dboys';
+const SHARED_DOC_ID = 'principal'; // todas las cuentas autorizadas leen/escriben este mismo documento
 
 /* ---------------- AUTH UI ----------------
    Registro público deshabilitado a propósito: las cuentas se crean
@@ -465,7 +466,7 @@ auth.onAuthStateChanged(async (user) => {
     currentUid = user.uid;
     $('authOverlay').style.display = 'none';
     $('appRoot').style.display = 'block';
-    $('cloudNoteText').textContent = 'Conectado como ' + user.email + ' — tus trabajos se guardan en Firebase.';
+    $('cloudNoteText').textContent = 'Conectado como ' + user.email + ' — viendo la información compartida del taller.';
     await loadFromStorage();
   }else{
     currentUid = null;
@@ -669,7 +670,7 @@ window.deleteJob = async function(id){
 async function persistJobs(){
   if(!currentUid) return;
   try{
-    await db.collection(COLLECTION).doc(currentUid).set({ jobs }, { merge: true });
+    await db.collection(COLLECTION).doc(SHARED_DOC_ID).set({ jobs }, { merge: true });
   }catch(e){
     console.error('Error guardando datos', e);
     showToast('No se pudo guardar en la nube. Revisa tu conexión.');
@@ -679,7 +680,7 @@ async function persistJobs(){
 async function persistDefaults(d){
   if(!currentUid) return;
   try{
-    await db.collection(COLLECTION).doc(currentUid).set({
+    await db.collection(COLLECTION).doc(SHARED_DOC_ID).set({
       defaults: {
         precioKg: d.precioKg, tipoImpresora: d.tipoImpresora, watts: d.watts, precioKwh: d.precioKwh,
         mantenimiento: d.mantenimiento, tarifaHora: d.tarifaHora, fallas: d.fallas, margen: d.margen
@@ -691,7 +692,7 @@ async function persistDefaults(d){
 async function loadFromStorage(){
   if(!currentUid) return;
   try{
-    const snap = await db.collection(COLLECTION).doc(currentUid).get();
+    const snap = await db.collection(COLLECTION).doc(SHARED_DOC_ID).get();
     if(snap.exists){
       const data = snap.data();
       jobs = data.jobs || [];
