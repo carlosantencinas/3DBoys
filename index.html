@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3Dboys — Registro de trabajos y costos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<!-- PDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+<!-- Firebase (nube real: Auth + Firestore) -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+<style>
+  :root{
+    --bg: #1c1b1a;
+    --surface: #242220;
+    --surface-2: #2c2925;
+    --border: #3a3630;
+    --text: #f2ede2;
+    --muted: #a89f8f;
+    --accent: #ff6b35;
+    --accent-dim: #ff6b3522;
+    --good: #4ecdc4;
+    --bad: #e8595a;
+    --font-display: 'Space Grotesk', sans-serif;
+    --font-body: 'Inter', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--font-body);
+    line-height:1.5;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:36px 24px 80px;}
+
+  /* ---------- AUTH OVERLAY ---------- */
+  #authOverlay{
+    position:fixed;inset:0;background:var(--bg);z-index:100;
+    display:flex;align-items:center;justify-content:center;padding:20px;
+  }
+  .auth-card{
+    width:100%;max-width:380px;background:var(--surface);border:1px solid var(--border);
+    border-radius:12px;padding:30px;
+  }
+  .auth-card .brand{display:flex;align-items:center;gap:10px;margin-bottom:22px;justify-content:center;}
+  .auth-card h1{font-family:var(--font-display);font-size:22px;margin:0;}
+  .auth-card p.tag{text-align:center;color:var(--muted);font-size:13px;margin:-14px 0 22px;}
+  .auth-card label{display:block;font-size:12.5px;color:var(--muted);margin-bottom:5px;}
+  .auth-card input{
+    width:100%;background:var(--surface-2);border:1px solid var(--border);color:var(--text);
+    font-family:var(--font-mono);font-size:14px;padding:10px;border-radius:6px;outline:none;
+    margin-bottom:14px;
+  }
+  .auth-card input:focus{border-color:var(--accent);}
+  .auth-error{color:var(--bad);font-size:12.5px;margin:-6px 0 14px;min-height:16px;}
+  .auth-toggle{text-align:center;font-size:12.5px;color:var(--muted);margin-top:14px;}
+  .auth-toggle a{color:var(--accent);cursor:pointer;text-decoration:none;}
+
+  header.top{
+    display:flex;justify-content:space-between;align-items:flex-end;
+    gap:20px;margin-bottom:32px;border-bottom:1px solid var(--border);padding-bottom:20px;
+    flex-wrap:wrap;
+  }
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand svg{flex-shrink:0;}
+  .brand h1{
+    font-family:var(--font-display);font-size:24px;font-weight:700;margin:0;
+    letter-spacing:-0.01em;
+  }
+  .brand p{margin:2px 0 0;color:var(--muted);font-size:13px;}
+  .stats{display:flex;gap:22px;flex-wrap:wrap;align-items:flex-end;}
+  .stat{text-align:right;}
+  .stat .num{font-family:var(--font-mono);font-size:20px;font-weight:700;color:var(--accent);}
+  .stat .lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
+
+  .cloud-note{
+    display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted);
+    background:var(--surface);border:1px solid var(--border);border-radius:20px;
+    padding:6px 8px 6px 12px;margin-bottom:24px;flex-wrap:wrap;
+  }
+  .cloud-note .left{display:flex;align-items:center;gap:8px;}
+  .cloud-note .dot{width:6px;height:6px;border-radius:50%;background:var(--good);flex-shrink:0;}
+  .cloud-note button{
+    background:transparent;border:1px solid var(--border);color:var(--muted);
+    border-radius:14px;padding:4px 12px;font-size:11.5px;cursor:pointer;
+  }
+  .cloud-note button:hover{color:var(--bad);border-color:var(--bad);}
+
+  .grid{display:grid;grid-template-columns:1.1fr 0.9fr;gap:24px;align-items:start;}
+  @media (max-width:860px){ .grid{grid-template-columns:1fr;} }
+
+  .card{
+    background:var(--surface);border:1px solid var(--border);border-radius:10px;
+    padding:22px;
+  }
+  .card h2{
+    font-family:var(--font-display);font-size:15px;margin:0 0 16px;
+    text-transform:uppercase;letter-spacing:.06em;color:var(--muted);
+    display:flex;align-items:center;gap:8px;
+  }
+  .card h2 .accent-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);}
+  .card-head-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;}
+
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
+  .field{margin-bottom:12px;}
+  .field label{display:block;font-size:12.5px;color:var(--muted);margin-bottom:5px;}
+  .field input, .field select, .field textarea{
+    width:100%;background:var(--surface-2);border:1px solid var(--border);
+    color:var(--text);font-family:var(--font-mono);font-size:14px;
+    padding:9px 10px;border-radius:6px;outline:none;transition:border-color .15s;
+  }
+  .field select{font-family:var(--font-body);}
+  .field textarea{font-family:var(--font-body);resize:vertical;min-height:56px;}
+  .field input:focus, .field select:focus, .field textarea:focus{border-color:var(--accent);}
+  .field input::placeholder, .field textarea::placeholder{color:#5c574c;}
+  .field.full{grid-column:1/-1;}
+  .field .hint{font-size:11px;color:#726b5c;margin-top:4px;}
+
+  .section-label{
+    font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;
+    margin:18px 0 8px;border-top:1px dashed var(--border);padding-top:14px;
+  }
+  .section-label:first-of-type{border-top:none;margin-top:0;padding-top:0;}
+
+  .btn{
+    font-family:var(--font-display);font-weight:600;font-size:14px;
+    background:var(--accent);color:#1c1b1a;border:none;border-radius:7px;
+    padding:12px 18px;cursor:pointer;width:100%;margin-top:6px;
+    transition:filter .15s, transform .1s;
+  }
+  .btn:hover{filter:brightness(1.08);}
+  .btn:active{transform:scale(.99);}
+  .btn.secondary{
+    background:transparent;color:var(--muted);border:1px solid var(--border);
+    font-family:var(--font-body);font-weight:500;
+  }
+  .btn.secondary:hover{color:var(--text);border-color:var(--muted);}
+  .btn.small{
+    width:auto;padding:8px 14px;font-size:12.5px;margin-top:0;
+    display:flex;align-items:center;gap:6px;
+  }
+  .btn.outline{
+    background:transparent;border:1px solid var(--accent);color:var(--accent);
+  }
+  .btn.outline:hover{background:var(--accent-dim);}
+
+  .preview-price{
+    text-align:center;padding:18px 10px 22px;border-bottom:1px solid var(--border);margin-bottom:18px;
+  }
+  .preview-price .lbl{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;}
+  .preview-price .val{
+    font-family:var(--font-mono);font-size:36px;font-weight:700;color:var(--accent);
+    margin-top:4px;
+  }
+  .preview-price .sub{font-size:12.5px;color:var(--muted);margin-top:4px;}
+  .preview-price .sub b{color:var(--good);font-family:var(--font-mono);}
+
+  .stack{
+    display:flex;flex-direction:column;gap:3px;margin-bottom:18px;border-radius:6px;overflow:hidden;
+  }
+  .layer{
+    display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;
+    padding:8px 10px;
+    background-image: repeating-linear-gradient(0deg, rgba(0,0,0,0.16) 0px, rgba(0,0,0,0.16) 1px, transparent 1px, transparent 4px);
+    border-radius:3px;
+  }
+  .layer .dot{width:9px;height:9px;border-radius:2px;}
+  .layer .name{font-size:12.5px;color:var(--text);}
+  .layer .amt{font-family:var(--font-mono);font-size:13px;color:var(--text);text-align:right;}
+  .layer.total{border-top:1px solid var(--border);margin-top:4px;padding-top:10px;background-image:none;}
+  .layer.total .name{color:var(--muted);text-transform:uppercase;font-size:11px;letter-spacing:.05em;}
+  .layer.total .amt{font-size:15px;font-weight:700;}
+  .layer.margin .amt{color:var(--good);}
+  .layer.margin .dot{background:var(--good)!important;}
+
+  .barviz{height:14px;border-radius:4px;overflow:hidden;display:flex;margin-bottom:18px;border:1px solid var(--border);}
+  .barviz span{height:100%;}
+
+  .table-wrap{margin-top:28px;}
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  thead th{
+    text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;
+    color:var(--muted);padding:0 10px 10px;font-weight:500;border-bottom:1px solid var(--border);
+  }
+  tbody td{padding:12px 10px;border-bottom:1px solid var(--border);vertical-align:middle;}
+  tbody tr:hover{background:var(--surface-2);}
+  td.num, th.num{font-family:var(--font-mono);text-align:right;}
+  td.name{font-weight:500;}
+  td.name .client{display:block;font-size:11px;color:var(--muted);font-weight:400;margin-top:2px;}
+  td.date{color:var(--muted);font-size:12.5px;}
+  .margin-tag{
+    font-family:var(--font-mono);font-size:12px;padding:2px 8px;border-radius:20px;
+    background:var(--accent-dim);color:var(--accent);display:inline-block;
+  }
+  .row-actions{display:flex;gap:6px;}
+  .icon-btn{
+    background:transparent;border:1px solid var(--border);color:var(--muted);
+    border-radius:6px;width:28px;height:28px;cursor:pointer;font-size:12px;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .icon-btn:hover{border-color:var(--bad);color:var(--bad);}
+  .icon-btn.pdf:hover{border-color:var(--accent);color:var(--accent);}
+
+  .empty{
+    text-align:center;padding:50px 20px;color:var(--muted);font-size:14px;
+    border:1px dashed var(--border);border-radius:10px;margin-top:20px;
+  }
+  .empty .big{font-family:var(--font-display);font-size:16px;color:var(--text);margin-bottom:6px;}
+
+  .toast{
+    position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);
+    background:var(--surface-2);border:1px solid var(--accent);color:var(--text);
+    padding:10px 18px;border-radius:8px;font-size:13.5px;opacity:0;
+    transition:opacity .25s, transform .25s;pointer-events:none;z-index:50;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  #appRoot{display:none;}
+</style>
+</head>
+<body>
+
+<!-- ================= AUTH OVERLAY ================= -->
+<div id="authOverlay">
+  <div class="auth-card">
+    <div class="brand">
+      <svg width="30" height="30" viewBox="0 0 34 34" fill="none">
+        <rect x="3" y="22" width="28" height="6" rx="1.5" fill="#3a3630"/>
+        <rect x="6" y="17" width="22" height="5" rx="1" fill="#4a453c"/>
+        <rect x="9" y="12.5" width="16" height="4.5" rx="1" fill="#5c574c"/>
+        <rect x="12" y="8.5" width="10" height="4" rx="1" fill="#ff6b35"/>
+        <rect x="15.3" y="3" width="3.4" height="6" rx="1" fill="#ff6b35"/>
+      </svg>
+      <h1>3Dboys</h1>
+    </div>
+    <p class="tag" id="authTag">Ingresa a tu taller</p>
+
+    <label>Correo</label>
+    <input type="email" id="authEmail" placeholder="tucorreo@ejemplo.com" autocomplete="email">
+    <label>Contraseña</label>
+    <input type="password" id="authPassword" placeholder="••••••••" autocomplete="current-password">
+    <div class="auth-error" id="authError"></div>
+
+    <button class="btn" id="btnAuthSubmit">Iniciar sesión</button>
+    <div class="auth-toggle" id="authToggle">
+      ¿Necesitas acceso? Pide al encargado del taller que te cree un usuario desde el panel de Firebase.
+    </div>
+  </div>
+</div>
+
+<!-- ================= APP ================= -->
+<div id="appRoot">
+<div class="wrap">
+
+  <header class="top">
+    <div class="brand">
+      <svg width="36" height="36" viewBox="0 0 34 34" fill="none">
+        <rect x="3" y="22" width="28" height="6" rx="1.5" fill="#3a3630"/>
+        <rect x="6" y="17" width="22" height="5" rx="1" fill="#4a453c"/>
+        <rect x="9" y="12.5" width="16" height="4.5" rx="1" fill="#5c574c"/>
+        <rect x="12" y="8.5" width="10" height="4" rx="1" fill="#ff6b35"/>
+        <rect x="15.3" y="3" width="3.4" height="6" rx="1" fill="#ff6b35"/>
+      </svg>
+      <div>
+        <h1>3Dboys</h1>
+        <p>Registro de trabajos e impresión de costos</p>
+      </div>
+    </div>
+    <div class="stats" id="statsBar">
+      <div class="stat"><div class="num" id="statCount">0</div><div class="lbl">Trabajos</div></div>
+      <div class="stat"><div class="num" id="statRevenue">Bs 0</div><div class="lbl">Ventas proyectadas</div></div>
+      <div class="stat"><div class="num" id="statProfit">Bs 0</div><div class="lbl">Ganancia acumulada</div></div>
+      <div class="stat"><div class="num" id="statMargin">0%</div><div class="lbl">Margen promedio</div></div>
+    </div>
+  </header>
+
+  <div class="cloud-note">
+    <div class="left"><span class="dot"></span> <span id="cloudNoteText">Conectado — tus trabajos se guardan en Firebase y estarán disponibles desde cualquier dispositivo.</span></div>
+    <button id="btnLogout">Cerrar sesión</button>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2><span class="accent-dot"></span> Nuevo trabajo</h2>
+
+      <div class="field full">
+        <label>Nombre del trabajo</label>
+        <input type="text" id="f_nombre" placeholder="Ej: Soporte para celular x3">
+      </div>
+
+      <div class="field full">
+        <label>Solicitado / procesado por</label>
+        <input type="text" id="f_cliente" placeholder="Nombre del cliente o encargado">
+      </div>
+
+      <div class="field full">
+        <label>Descripción / notas del trabajo</label>
+        <textarea id="f_descripcion" placeholder="Detalles del pedido, color, acabado, referencias, etc."></textarea>
+      </div>
+
+      <div class="section-label">Material</div>
+      <div class="field-row">
+        <div class="field"><label>Filamento usado (g)</label><input type="number" id="f_gramos" min="0" step="0.1" placeholder="120"></div>
+        <div class="field"><label>Precio filamento (Bs/kg)</label><input type="number" id="f_precioKg" min="0" step="0.1" placeholder="95"></div>
+      </div>
+
+      <div class="section-label">Impresión</div>
+      <div class="field-row">
+        <div class="field"><label>Tiempo de impresión — horas</label><input type="number" id="f_horasImp" min="0" step="1" placeholder="4"></div>
+        <div class="field"><label>Tiempo de impresión — minutos</label><input type="number" id="f_minImp" min="0" max="59" step="1" placeholder="30"></div>
+      </div>
+      <div class="field full">
+        <label>Tipo de impresora</label>
+        <select id="f_tipoImpresora">
+          <option value="" data-watts="">-- Seleccionar tipo --</option>
+          <option value="Creality Ender 3 / Ender 3 V2 (FDM)" data-watts="220">Creality Ender 3 / Ender 3 V2 (FDM)</option>
+          <option value="Creality Ender 3 S1 / Neo (FDM)" data-watts="350">Creality Ender 3 S1 / Neo (FDM)</option>
+          <option value="Creality CR-10 (FDM)" data-watts="270">Creality CR-10 (FDM)</option>
+          <option value="Creality K1 (FDM)" data-watts="350">Creality K1 (FDM)</option>
+          <option value="Anycubic Kobra 2 (FDM)" data-watts="300">Anycubic Kobra 2 (FDM)</option>
+          <option value="Prusa i3 MK3S+ (FDM)" data-watts="240">Prusa i3 MK3S+ (FDM)</option>
+          <option value="Bambu Lab P1P / P1S (FDM)" data-watts="350">Bambu Lab P1P / P1S (FDM)</option>
+          <option value="Anycubic Photon (Resina)" data-watts="60">Anycubic Photon (Resina)</option>
+          <option value="Elegoo Mars (Resina)" data-watts="55">Elegoo Mars (Resina)</option>
+          <option value="Otro / Ingresar manualmente" data-watts="">Otro / Ingresar manualmente</option>
+        </select>
+        <div class="hint">Al elegir un modelo se autocompleta la potencia. Puedes ajustarla manualmente.</div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Potencia impresora (W)</label><input type="number" id="f_watts" min="0" step="1" placeholder="200"></div>
+        <div class="field"><label>Precio energía (Bs/kWh)</label><input type="number" id="f_precioKwh" min="0" step="0.01" value="0.7"></div>
+      </div>
+      <div class="field">
+        <label>Mantenimiento (Bs/hora)</label>
+        <input type="number" id="f_mantenimiento" min="0" step="0.1" placeholder="1.5">
+      </div>
+
+      <div class="section-label">Mano de obra y otros</div>
+      <div class="field-row">
+        <div class="field"><label>Horas de trabajo (diseño/post-proceso)</label><input type="number" id="f_horasTrabajo" min="0" step="0.1" placeholder="0.5"></div>
+        <div class="field"><label>Tarifa mano de obra (Bs/hora)</label><input type="number" id="f_tarifaHora" min="0" step="0.1" placeholder="20"></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label>Otros costos fijos (Bs)</label><input type="number" id="f_otros" min="0" step="0.1" placeholder="Pintura, tornillos, etc."></div>
+        <div class="field"><label>Colchón por fallas (%)</label><input type="number" id="f_fallas" min="0" step="1" placeholder="10"></div>
+      </div>
+
+      <div class="section-label">Precio de venta</div>
+      <div class="field">
+        <label>Margen de ganancia deseado (%)</label>
+        <input type="number" id="f_margen" min="0" step="1" placeholder="40">
+      </div>
+
+      <button class="btn" id="btnGuardar">Guardar trabajo</button>
+      <button class="btn secondary" id="btnLimpiar">Limpiar formulario</button>
+    </div>
+
+    <div class="card">
+      <div class="card-head-row">
+        <h2 style="margin-bottom:0;"><span class="accent-dot"></span> Vista previa de costos</h2>
+        <button class="btn small outline" id="btnProformaActual">Exportar proforma PDF</button>
+      </div>
+
+      <div class="preview-price">
+        <div class="lbl">Precio de venta sugerido</div>
+        <div class="val" id="pv_precio">Bs 0.00</div>
+        <div class="sub">Ganancia estimada: <b id="pv_ganancia">Bs 0.00</b></div>
+      </div>
+
+      <div class="barviz" id="pv_barviz"></div>
+      <div class="stack" id="pv_stack"></div>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <div class="card" style="padding:0; overflow:hidden;">
+      <div style="padding:20px 22px 6px;">
+        <div class="card-head-row">
+          <h2 style="margin-bottom:0;"><span class="accent-dot"></span> Historial de trabajos</h2>
+          <button class="btn small outline" id="btnReportePDF">Exportar reporte PDF</button>
+        </div>
+      </div>
+      <div id="tableContainer" style="padding:0 22px 22px;"></div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* =========================================================
+   1) CONFIGURA TU PROYECTO DE FIREBASE AQUÍ
+   Ve a https://console.firebase.google.com -> crea un proyecto
+   -> Configuración del proyecto -> tus apps -> Web (</>) 
+   -> copia el objeto firebaseConfig y pégalo abajo.
+   ========================================================= */
+const firebaseConfig = {
+  apiKey: "AIzaSyBwmXJPKuNRiJg8XDaLXnQa7rv6XZj3Etw",
+  authDomain: "dboys-5a403.firebaseapp.com",
+  projectId: "dboys-5a403",
+  storageBucket: "dboys-5a403.firebasestorage.app",
+  messagingSenderId: "362483512162",
+  appId: "1:362483512162:web:f5a971440f5972cd8d723b",
+  measurementId: "G-9ZH28SQVGN"
+};
+
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+const COLLECTION = 'talleres3dboys';
+
+/* ---------------- AUTH UI ----------------
+   Registro público deshabilitado a propósito: las cuentas se crean
+   manualmente desde Firebase Console (Authentication -> Users -> Add user),
+   así solo entra quien el dueño del taller autorice. */
+let currentUid = null;
+
+function $(id){ return document.getElementById(id); }
+
+$('btnAuthSubmit').addEventListener('click', async () => {
+  const email = $('authEmail').value.trim();
+  const password = $('authPassword').value;
+  $('authError').textContent = '';
+  if(!email || !password){
+    $('authError').textContent = 'Completa correo y contraseña.';
+    return;
+  }
+  try{
+    await auth.signInWithEmailAndPassword(email, password);
+  }catch(e){
+    $('authError').textContent = traducirErrorAuth(e.code) || e.message;
+  }
+});
+
+['authEmail','authPassword'].forEach(id => {
+  $(id).addEventListener('keydown', (e) => { if(e.key === 'Enter') $('btnAuthSubmit').click(); });
+});
+
+function traducirErrorAuth(code){
+  const map = {
+    'auth/invalid-email': 'Correo inválido.',
+    'auth/user-not-found': 'No existe una cuenta con ese correo.',
+    'auth/wrong-password': 'Contraseña incorrecta.',
+    'auth/email-already-in-use': 'Ese correo ya tiene una cuenta.',
+    'auth/weak-password': 'La contraseña debe tener al menos 6 caracteres.',
+    'auth/invalid-credential': 'Correo o contraseña incorrectos.'
+  };
+  return map[code];
+}
+
+$('btnLogout').addEventListener('click', () => auth.signOut());
+
+auth.onAuthStateChanged(async (user) => {
+  if(user){
+    currentUid = user.uid;
+    $('authOverlay').style.display = 'none';
+    $('appRoot').style.display = 'block';
+    $('cloudNoteText').textContent = 'Conectado como ' + user.email + ' — tus trabajos se guardan en Firebase.';
+    await loadFromStorage();
+  }else{
+    currentUid = null;
+    $('authOverlay').style.display = 'flex';
+    $('appRoot').style.display = 'none';
+  }
+});
+
+/* ---------------- APP LOGIC ---------------- */
+
+const COLORS = {
+  material: '#ff6b35', energia: '#e8b83f', mantenimiento: '#8b93a0',
+  manoObra: '#c9a9e0', otros: '#6fa8dc', fallas: '#e8595a', margen: '#4ecdc4'
+};
+
+const FIELD_IDS = ['f_nombre','f_cliente','f_descripcion','f_gramos','f_precioKg','f_horasImp','f_minImp',
+  'f_watts','f_mantenimiento','f_horasTrabajo','f_tarifaHora','f_otros','f_fallas','f_margen'];
+
+let jobs = [];
+
+function num(v){ const n = parseFloat(v); return isNaN(n) ? 0 : n; }
+function money(v){ return 'Bs ' + v.toLocaleString('es-BO', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+
+function showToast(msg){
+  const t = $('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(()=> t.classList.remove('show'), 2200);
+}
+
+function readForm(){
+  const horasImp = num($('f_horasImp').value);
+  const minImp = num($('f_minImp').value);
+  return {
+    nombre: $('f_nombre').value.trim(),
+    cliente: $('f_cliente').value.trim(),
+    descripcion: $('f_descripcion').value.trim(),
+    gramos: num($('f_gramos').value),
+    precioKg: num($('f_precioKg').value),
+    horasImp, minImp,
+    horasImpresion: horasImp + (minImp / 60),
+    tipoImpresora: $('f_tipoImpresora').value,
+    watts: num($('f_watts').value),
+    precioKwh: num($('f_precioKwh').value),
+    mantenimiento: num($('f_mantenimiento').value),
+    horasTrabajo: num($('f_horasTrabajo').value),
+    tarifaHora: num($('f_tarifaHora').value),
+    otros: num($('f_otros').value),
+    fallas: num($('f_fallas').value),
+    margen: num($('f_margen').value),
+  };
+}
+
+function calcular(d){
+  const costoMaterial = d.gramos * (d.precioKg / 1000);
+  const costoEnergia = (d.watts / 1000) * d.horasImpresion * d.precioKwh;
+  const costoMantenimiento = d.horasImpresion * d.mantenimiento;
+  const costoManoObra = d.horasTrabajo * d.tarifaHora;
+  const costoOtros = d.otros;
+  const subtotal = costoMaterial + costoEnergia + costoMantenimiento + costoManoObra + costoOtros;
+  const costoFallas = subtotal * (d.fallas / 100);
+  const costoTotal = subtotal + costoFallas;
+  const ganancia = costoTotal * (d.margen / 100);
+  const precioVenta = costoTotal + ganancia;
+  return { costoMaterial, costoEnergia, costoMantenimiento, costoManoObra, costoOtros, costoFallas, costoTotal, ganancia, precioVenta };
+}
+
+function tiempoStr(d){ return (d.horasImp||0) + 'h ' + (d.minImp||0) + 'min'; }
+
+function renderPreview(){
+  const d = readForm();
+  const c = calcular(d);
+  $('pv_precio').textContent = money(c.precioVenta);
+  $('pv_ganancia').textContent = money(c.ganancia);
+
+  const segments = [
+    {name:'Material', val:c.costoMaterial, color:COLORS.material},
+    {name:'Energía', val:c.costoEnergia, color:COLORS.energia},
+    {name:'Mantenimiento', val:c.costoMantenimiento, color:COLORS.mantenimiento},
+    {name:'Mano de obra', val:c.costoManoObra, color:COLORS.manoObra},
+    {name:'Otros costos', val:c.costoOtros, color:COLORS.otros},
+    {name:'Colchón por fallas', val:c.costoFallas, color:COLORS.fallas},
+    {name:'Margen de ganancia', val:c.ganancia, color:COLORS.margen, isMargin:true},
+  ];
+  const total = c.precioVenta || 1;
+
+  $('pv_barviz').innerHTML = segments.map(s => {
+    const pct = Math.max(0, (s.val/total)*100);
+    return pct > 0 ? `<span style="width:${pct}%;background:${s.color}"></span>` : '';
+  }).join('');
+
+  $('pv_stack').innerHTML = segments.map(s => `
+    <div class="layer ${s.isMargin?'margin':''}">
+      <span class="dot" style="background:${s.color}"></span>
+      <span class="name">${s.name}</span>
+      <span class="amt">${money(s.val)}</span>
+    </div>
+  `).join('') + `
+    <div class="layer total">
+      <span class="dot" style="background:transparent"></span>
+      <span class="name">Precio de venta</span>
+      <span class="amt">${money(c.precioVenta)}</span>
+    </div>
+  `;
+}
+
+function renderStats(){
+  const count = jobs.length;
+  const revenue = jobs.reduce((a,j)=>a + j.calc.precioVenta, 0);
+  const profit = jobs.reduce((a,j)=>a + j.calc.ganancia, 0);
+  const avgMargin = count ? (jobs.reduce((a,j)=>a + j.data.margen, 0) / count) : 0;
+  $('statCount').textContent = count;
+  $('statRevenue').textContent = money(revenue);
+  $('statProfit').textContent = money(profit);
+  $('statMargin').textContent = avgMargin.toFixed(0) + '%';
+}
+
+function escapeHtml(str){
+  const d = document.createElement('div');
+  d.textContent = str || '';
+  return d.innerHTML;
+}
+
+function renderTable(){
+  const container = $('tableContainer');
+  if(jobs.length === 0){
+    container.innerHTML = `
+      <div class="empty">
+        <div class="big">Todavía no hay trabajos registrados</div>
+        Completa el formulario de arriba y presiona "Guardar trabajo" para empezar tu historial.
+      </div>`;
+    return;
+  }
+  const sorted = [...jobs].sort((a,b)=> b.createdAt - a.createdAt);
+  container.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>Trabajo</th><th>Fecha</th><th class="num">Costo total</th>
+          <th class="num">Precio venta</th><th class="num">Ganancia</th><th class="num">Margen</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+        ${sorted.map(j => `
+          <tr>
+            <td class="name">${escapeHtml(j.data.nombre || 'Sin nombre')}${j.data.cliente ? `<span class="client">${escapeHtml(j.data.cliente)}</span>` : ''}</td>
+            <td class="date">${new Date(j.createdAt).toLocaleDateString('es-BO', {day:'2-digit', month:'short', year:'numeric'})}</td>
+            <td class="num">${money(j.calc.costoTotal)}</td>
+            <td class="num">${money(j.calc.precioVenta)}</td>
+            <td class="num">${money(j.calc.ganancia)}</td>
+            <td class="num"><span class="margin-tag">${j.data.margen}%</span></td>
+            <td>
+              <div class="row-actions">
+                <button class="icon-btn pdf" title="Exportar proforma PDF" onclick="exportProforma('${j.id}')">PDF</button>
+                <button class="icon-btn" title="Cargar en formulario" onclick="loadJob('${j.id}')">↺</button>
+                <button class="icon-btn" title="Eliminar" onclick="deleteJob('${j.id}')">✕</button>
+              </div>
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+  `;
+}
+
+function renderAll(){ renderPreview(); renderStats(); renderTable(); }
+
+window.loadJob = function(id){
+  const j = jobs.find(x => x.id === id);
+  if(!j) return;
+  $('f_nombre').value = j.data.nombre;
+  $('f_cliente').value = j.data.cliente || '';
+  $('f_descripcion').value = j.data.descripcion || '';
+  $('f_gramos').value = j.data.gramos;
+  $('f_precioKg').value = j.data.precioKg;
+  $('f_horasImp').value = j.data.horasImp;
+  $('f_minImp').value = j.data.minImp;
+  $('f_tipoImpresora').value = j.data.tipoImpresora || '';
+  $('f_watts').value = j.data.watts;
+  $('f_precioKwh').value = j.data.precioKwh;
+  $('f_mantenimiento').value = j.data.mantenimiento;
+  $('f_horasTrabajo').value = j.data.horasTrabajo;
+  $('f_tarifaHora').value = j.data.tarifaHora;
+  $('f_otros').value = j.data.otros;
+  $('f_fallas').value = j.data.fallas;
+  $('f_margen').value = j.data.margen;
+  renderPreview();
+  window.scrollTo({top:0, behavior:'smooth'});
+  showToast('Datos cargados en el formulario');
+};
+
+window.deleteJob = async function(id){
+  jobs = jobs.filter(j => j.id !== id);
+  await persistJobs();
+  renderAll();
+  showToast('Trabajo eliminado');
+};
+
+/* ---------------- FIRESTORE PERSISTENCE ---------------- */
+
+async function persistJobs(){
+  if(!currentUid) return;
+  try{
+    await db.collection(COLLECTION).doc(currentUid).set({ jobs }, { merge: true });
+  }catch(e){
+    console.error('Error guardando datos', e);
+    showToast('No se pudo guardar en la nube. Revisa tu conexión.');
+  }
+}
+
+async function persistDefaults(d){
+  if(!currentUid) return;
+  try{
+    await db.collection(COLLECTION).doc(currentUid).set({
+      defaults: {
+        precioKg: d.precioKg, tipoImpresora: d.tipoImpresora, watts: d.watts, precioKwh: d.precioKwh,
+        mantenimiento: d.mantenimiento, tarifaHora: d.tarifaHora, fallas: d.fallas, margen: d.margen
+      }
+    }, { merge: true });
+  }catch(e){ console.error('Error guardando defaults', e); }
+}
+
+async function loadFromStorage(){
+  if(!currentUid) return;
+  try{
+    const snap = await db.collection(COLLECTION).doc(currentUid).get();
+    if(snap.exists){
+      const data = snap.data();
+      jobs = data.jobs || [];
+      const d = data.defaults;
+      if(d){
+        if(d.precioKg !== undefined) $('f_precioKg').value = d.precioKg;
+        if(d.tipoImpresora) $('f_tipoImpresora').value = d.tipoImpresora;
+        if(d.watts !== undefined) $('f_watts').value = d.watts;
+        if(d.precioKwh !== undefined) $('f_precioKwh').value = d.precioKwh;
+        if(d.mantenimiento !== undefined) $('f_mantenimiento').value = d.mantenimiento;
+        if(d.tarifaHora !== undefined) $('f_tarifaHora').value = d.tarifaHora;
+        if(d.fallas !== undefined) $('f_fallas').value = d.fallas;
+        if(d.margen !== undefined) $('f_margen').value = d.margen;
+      }
+    }else{
+      jobs = [];
+    }
+  }catch(e){
+    console.error('Error leyendo datos', e);
+    showToast('No se pudo conectar a la nube.');
+    jobs = [];
+  }
+  renderAll();
+}
+
+function clearForm(keepDefaults=true){
+  const keepMap = {precioKg:'f_precioKg', tipoImpresora:'f_tipoImpresora', watts:'f_watts', precioKwh:'f_precioKwh', mantenimiento:'f_mantenimiento', tarifaHora:'f_tarifaHora', fallas:'f_fallas', margen:'f_margen'};
+  const keep = {};
+  if(keepDefaults){ Object.entries(keepMap).forEach(([k,id]) => keep[k] = $(id).value); }
+  FIELD_IDS.forEach(id => $(id).value = '');
+  $('f_tipoImpresora').value = '';
+  if(keepDefaults){ Object.entries(keep).forEach(([k,v]) => { $(keepMap[k]).value = v; }); }
+  renderPreview();
+}
+
+$('f_tipoImpresora').addEventListener('change', () => {
+  const sel = $('f_tipoImpresora');
+  const opt = sel.options[sel.selectedIndex];
+  const watts = opt ? opt.getAttribute('data-watts') : '';
+  if(watts){ $('f_watts').value = watts; }
+  renderPreview();
+});
+
+$('btnGuardar').addEventListener('click', async () => {
+  const d = readForm();
+  if(!d.nombre){
+    showToast('Ponle un nombre al trabajo antes de guardar');
+    $('f_nombre').focus();
+    return;
+  }
+  const c = calcular(d);
+  jobs.push({ id: 'job_' + Date.now() + '_' + Math.random().toString(36).slice(2,7), createdAt: Date.now(), data: d, calc: c });
+  await persistJobs();
+  await persistDefaults(d);
+  renderAll();
+  showToast('Trabajo guardado en la nube');
+  clearForm(true);
+  $('f_nombre').focus();
+});
+
+$('btnLimpiar').addEventListener('click', () => clearForm(true));
+FIELD_IDS.forEach(id => $(id).addEventListener('input', renderPreview));
+
+/* ---------------- PDF EXPORT ---------------- */
+
+function pdfHeader(doc, subtitle){
+  doc.setFontSize(22); doc.setTextColor(255,107,53); doc.setFont(undefined, 'bold');
+  doc.text('3Dboys', 14, 20);
+  doc.setFont(undefined, 'normal'); doc.setFontSize(11); doc.setTextColor(110);
+  doc.text(subtitle, 14, 27);
+  doc.setDrawColor(225); doc.line(14, 31, 196, 31);
+}
+function pdfFooter(doc){
+  doc.setFontSize(8); doc.setTextColor(150);
+  doc.text('Documento generado por 3Dboys — ' + new Date().toLocaleString('es-BO'), 14, 289);
+}
+
+window.exportProforma = function(id){
+  const j = jobs.find(x => x.id === id);
+  if(!j){ showToast('No se encontró el trabajo'); return; }
+  buildProformaPdf(j.data, j.calc, j.createdAt);
+};
+
+$('btnProformaActual').addEventListener('click', () => {
+  const d = readForm();
+  if(!d.nombre){ showToast('Ponle un nombre al trabajo antes de exportar'); $('f_nombre').focus(); return; }
+  const c = calcular(d);
+  buildProformaPdf(d, c, Date.now());
+});
+
+function buildProformaPdf(d, c, createdAt){
+  if(!window.jspdf){ showToast('La librería de PDF no cargó, revisa tu conexión'); return; }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  pdfHeader(doc, 'Proforma / Detalle de costos');
+
+  doc.setFontSize(10); doc.setTextColor(30);
+  let y = 40;
+  doc.text('Trabajo: ' + (d.nombre || '-'), 14, y); y += 6;
+  doc.text('Cliente / Solicitado por: ' + (d.cliente || '-'), 14, y); y += 6;
+  doc.text('Fecha: ' + new Date(createdAt).toLocaleDateString('es-BO'), 14, y); y += 6;
+  doc.text('Tipo de impresora: ' + (d.tipoImpresora || '-'), 14, y); y += 6;
+  doc.text('Tiempo de impresión: ' + tiempoStr(d), 14, y); y += 6;
+  doc.text('Filamento usado: ' + (d.gramos || 0) + ' g', 14, y); y += 6;
+
+  if(d.descripcion){
+    doc.text('Descripción:', 14, y); y += 5;
+    const lines = doc.splitTextToSize(d.descripcion, 180);
+    doc.setTextColor(90); doc.text(lines, 14, y); doc.setTextColor(30);
+    y += lines.length * 5 + 3;
+  }
+
+  const rows = [
+    ['Material (filamento)', money(c.costoMaterial)],
+    ['Energía eléctrica', money(c.costoEnergia)],
+    ['Mantenimiento de equipo', money(c.costoMantenimiento)],
+    ['Mano de obra', money(c.costoManoObra)],
+    ['Otros costos', money(c.costoOtros)],
+    ['Colchón por fallas (' + d.fallas + '%)', money(c.costoFallas)],
+    ['Subtotal costo de producción', money(c.costoTotal)],
+    ['Margen de ganancia (' + d.margen + '%)', money(c.ganancia)],
+  ];
+
+  doc.autoTable({
+    startY: y + 4,
+    head: [['Concepto', 'Monto (Bs)']],
+    body: rows,
+    styles: { fontSize: 9, cellPadding: 4 },
+    headStyles: { fillColor: [36, 34, 32] },
+    columnStyles: { 1: { halign: 'right' } },
+    didParseCell: function(data){
+      if(data.section === 'body' && data.row.index === 6){
+        data.cell.styles.fontStyle = 'bold';
+        data.cell.styles.fillColor = [245, 242, 235];
+      }
+    }
+  });
+
+  const finalY = doc.lastAutoTable.finalY + 10;
+  doc.setFontSize(14); doc.setTextColor(255, 107, 53); doc.setFont(undefined, 'bold');
+  doc.text('TOTAL A PAGAR: ' + money(c.precioVenta), 14, finalY);
+  doc.setFont(undefined, 'normal');
+
+  pdfFooter(doc);
+  doc.save('3Dboys_proforma_' + (d.nombre || 'trabajo').replace(/\s+/g, '_') + '.pdf');
+  showToast('Proforma PDF generada');
+}
+
+$('btnReportePDF').addEventListener('click', () => {
+  if(jobs.length === 0){ showToast('Todavía no hay trabajos para exportar'); return; }
+  if(!window.jspdf){ showToast('La librería de PDF no cargó, revisa tu conexión'); return; }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  pdfHeader(doc, 'Reporte de trabajos registrados');
+
+  const sorted = [...jobs].sort((a,b)=> b.createdAt - a.createdAt);
+  const rows = sorted.map(j => [
+    j.data.nombre || '-', j.data.cliente || '-', new Date(j.createdAt).toLocaleDateString('es-BO'),
+    money(j.calc.costoTotal), money(j.calc.precioVenta), money(j.calc.ganancia), j.data.margen + '%'
+  ]);
+
+  doc.autoTable({
+    startY: 38,
+    head: [['Trabajo', 'Cliente', 'Fecha', 'Costo total', 'Precio venta', 'Ganancia', 'Margen']],
+    body: rows,
+    styles: { fontSize: 8, cellPadding: 3 },
+    headStyles: { fillColor: [36, 34, 32] },
+    columnStyles: { 3:{halign:'right'}, 4:{halign:'right'}, 5:{halign:'right'}, 6:{halign:'right'} }
+  });
+
+  const finalY = doc.lastAutoTable.finalY + 10;
+  const revenue = jobs.reduce((a,j)=>a + j.calc.precioVenta, 0);
+  const profit = jobs.reduce((a,j)=>a + j.calc.ganancia, 0);
+
+  doc.setFontSize(10); doc.setTextColor(30); doc.setFont(undefined, 'bold');
+  doc.text('Resumen general', 14, finalY);
+  doc.setFont(undefined, 'normal');
+  doc.text('Trabajos registrados: ' + jobs.length, 14, finalY + 6);
+  doc.text('Ventas proyectadas: ' + money(revenue), 14, finalY + 12);
+  doc.text('Ganancia acumulada: ' + money(profit), 14, finalY + 18);
+
+  pdfFooter(doc);
+  doc.save('3Dboys_reporte_trabajos.pdf');
+  showToast('Reporte PDF generado');
+});
+</script>
+</body>
+</html>
