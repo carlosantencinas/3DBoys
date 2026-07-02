@@ -915,7 +915,14 @@ async function loadFromStorage(){
     if(snap.exists){
       const data = snap.data();
       jobs = data.jobs || [];
-      materials = data.materials || [];
+materials = (data.materials || []).map(m => ({
+  id: m.id,
+  nombre: m.nombre || '',
+  categoria: m.categoria || 'Insumo',
+  unidad: m.unidad || 'g',
+  stock: (m.stock !== undefined) ? m.stock : (m.stockGramos !== undefined ? m.stockGramos : 0),
+  costoPromedio: (m.costoPromedio !== undefined) ? m.costoPromedio : (m.avgCostPerKg !== undefined ? m.avgCostPerKg / 1000 : 0)
+}));      
       purchases = data.purchases || [];
       const d = data.defaults;
       if(d){
@@ -1173,7 +1180,7 @@ function renderComprasStats(){
     const f = new Date(p.fecha);
     return f.getMonth() === now.getMonth() && f.getFullYear() === now.getFullYear();
   }).reduce((a,p)=> a + p.precioTotal, 0);
-  const valorStock = materials.reduce((a,m)=> a + (m.stockGramos / 1000) * m.avgCostPerKg, 0);
+  const valorStock = materials.reduce((a,m)=> a + (m.stock * m.costoPromedio), 0);
   const equipos = purchases.filter(p => p.categoria === 'Equipo').reduce((a,p)=> a + p.precioTotal, 0);
 
   $('statInvertido').textContent = money(totalInvertido);
@@ -1341,22 +1348,21 @@ $('btnReporteComprasPDF').addEventListener('click', () => {
   doc.text('Total invertido: ' + money(totalInvertido), 14, finalY + 12);
 
   if(materials.length){
-    finalY += 24;
-    doc.setFont(undefined, 'bold');
-    doc.text('Inventario actual', 14, finalY);
-    doc.setFont(undefined, 'normal');
-    const matRows = materials.map(m => [
-      m.nombre, m.categoria, m.stockGramos.toFixed(0) + ' g',
-      money(m.avgCostPerKg) + '/kg', money((m.stockGramos / 1000) * m.avgCostPerKg)
-    ]);
-    doc.autoTable({
-      startY: finalY + 4,
-      head: [['Material', 'Categoría', 'Stock', 'Costo prom.', 'Valor']],
-      body: matRows,
-      styles: { fontSize: 8, cellPadding: 3 },
-      headStyles: { fillColor: [36, 34, 32] },
-    });
-  }
+  finalY += 24;
+  doc.setFont(undefined, 'bold');
+  doc.text('Inventario actual', 14, finalY);
+  doc.setFont(undefined, 'normal');
+  const matRows = materials.map(m => [
+    m.nombre, m.categoria, formatStock(m), formatCosto(m), money(m.stock * m.costoPromedio)
+  ]);
+  doc.autoTable({
+    startY: finalY + 4,
+    head: [['Material', 'Categoría', 'Stock', 'Costo prom.', 'Valor']],
+    body: matRows,
+    styles: { fontSize: 8, cellPadding: 3 },
+    headStyles: { fillColor: [36, 34, 32] },
+  });
+}
 
   pdfFooter(doc);
   doc.save('3Dboys_reporte_compras.pdf');
