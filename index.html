@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-<title>3Dboys — Registro de trabajos y costos</title>
+<title>3Dboys — Gestión de trabajos, compras y ventas</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 
@@ -41,7 +41,7 @@
     line-height:1.5;
     -webkit-tap-highlight-color: transparent;
   }
-  .wrap{max-width:1180px;margin:0 auto;padding:20px 16px 60px;}
+  .wrap{max-width:1180px;margin:0 auto;padding:16px 12px 60px;}
   @media (min-width: 640px){ .wrap{padding:36px 24px 80px;} }
 
   /* ---------- AUTH OVERLAY ---------- */
@@ -68,42 +68,42 @@
   .auth-toggle a{color:var(--accent);cursor:pointer;text-decoration:none;}
 
   header.top{
-    display:flex;flex-direction:column;gap:16px;
-    margin-bottom:24px;border-bottom:1px solid var(--border);padding-bottom:16px;
+    display:flex;flex-direction:column;gap:12px;
+    margin-bottom:18px;border-bottom:1px solid var(--border);padding-bottom:14px;
   }
   @media (min-width: 640px){ header.top{flex-direction:row;justify-content:space-between;align-items:flex-end;gap:20px;padding-bottom:20px;margin-bottom:32px;} }
   .brand{display:flex;align-items:center;gap:10px;}
   .brand svg{flex-shrink:0; width:32px; height:32px;}
-  .brand h1{font-family:var(--font-display);font-size:22px;font-weight:700;margin:0;letter-spacing:-0.01em;}
-  .brand p{margin:2px 0 0;color:var(--muted);font-size:12px;}
-  .stats{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end;width:100%;}
-  @media (min-width: 640px){ .stats{width:auto;gap:22px;} }
+  .brand h1{font-family:var(--font-display);font-size:20px;font-weight:700;margin:0;letter-spacing:-0.01em;}
+  .brand p{margin:2px 0 0;color:var(--muted);font-size:11px;}
+  .stats{display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;width:100%;}
+  @media (min-width: 640px){ .stats{width:auto;gap:18px;} }
   .stat{text-align:left; flex:1 1 45%;}
   @media (min-width: 640px){ .stat{text-align:right; flex:none; } }
-  .stat .num{font-family:var(--font-mono);font-size:18px;font-weight:700;color:var(--accent);}
-  .stat .lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
+  .stat .num{font-family:var(--font-mono);font-size:16px;font-weight:700;color:var(--accent);}
+  .stat .lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
 
   .cloud-note{
-    display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted);
+    display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:11px;color:var(--muted);
     background:var(--surface);border:1px solid var(--border);border-radius:20px;
-    padding:6px 8px 6px 12px;margin-bottom:18px;flex-wrap:wrap;
+    padding:5px 8px 5px 10px;margin-bottom:14px;flex-wrap:wrap;
   }
-  .cloud-note .left{display:flex;align-items:center;gap:8px;font-size:11px;}
-  .cloud-note .dot{width:6px;height:6px;border-radius:50%;background:var(--good);flex-shrink:0;}
+  .cloud-note .left{display:flex;align-items:center;gap:6px;font-size:10px;}
+  .cloud-note .dot{width:5px;height:5px;border-radius:50%;background:var(--good);flex-shrink:0;}
   .cloud-note button{
     background:transparent;border:1px solid var(--border);color:var(--muted);
-    border-radius:14px;padding:4px 12px;font-size:11px;cursor:pointer;
+    border-radius:14px;padding:3px 10px;font-size:10px;cursor:pointer;
   }
   .cloud-note button:hover{color:var(--bad);border-color:var(--bad);}
 
   .tabs{
-    display:flex;gap:6px;margin-bottom:18px;overflow-x:auto;padding-bottom:4px;
+    display:flex;gap:4px;margin-bottom:14px;overflow-x:auto;padding-bottom:4px;
     -webkit-overflow-scrolling: touch;
   }
   .tab-btn{
-    font-family:var(--font-display);font-weight:600;font-size:13px;
+    font-family:var(--font-display);font-weight:600;font-size:12px;
     background:transparent;border:1px solid var(--border);color:var(--muted);
-    padding:8px 14px;border-radius:8px;cursor:pointer;transition:all .15s;
+    padding:6px 12px;border-radius:8px;cursor:pointer;transition:all .15s;
     white-space:nowrap;
   }
   .tab-btn:hover{color:var(--text);border-color:var(--muted);}
@@ -113,48 +113,48 @@
   .tab-panel.active{display:block;}
 
   .grid{
-    display:grid;grid-template-columns:1fr;gap:20px;align-items:start;
+    display:grid;grid-template-columns:1fr;gap:16px;align-items:start;
   }
   @media (min-width: 860px){ .grid{grid-template-columns:1.1fr 0.9fr;} }
 
   .card{
     background:var(--surface);border:1px solid var(--border);border-radius:10px;
-    padding:16px;
+    padding:14px;
   }
-  @media (min-width: 640px){ .card{padding:22px;} }
+  @media (min-width: 640px){ .card{padding:20px;} }
   .card h2{
-    font-family:var(--font-display);font-size:14px;margin:0 0 14px;
+    font-family:var(--font-display);font-size:13px;margin:0 0 12px;
     text-transform:uppercase;letter-spacing:.06em;color:var(--muted);
-    display:flex;align-items:center;gap:8px;
+    display:flex;align-items:center;gap:6px;
   }
-  .card h2 .accent-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);}
-  .card-head-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;}
+  .card h2 .accent-dot{width:6px;height:6px;border-radius:50%;background:var(--accent);}
+  .card-head-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;}
 
-  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
-  .field{margin-bottom:10px;}
-  .field label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px;}
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;}
+  .field{margin-bottom:8px;}
+  .field label{display:block;font-size:11px;color:var(--muted);margin-bottom:3px;}
   .field input, .field select, .field textarea{
     width:100%;background:var(--surface-2);border:1px solid var(--border);
-    color:var(--text);font-family:var(--font-mono);font-size:14px;
-    padding:8px 10px;border-radius:6px;outline:none;transition:border-color .15s;
+    color:var(--text);font-family:var(--font-mono);font-size:13px;
+    padding:7px 8px;border-radius:6px;outline:none;transition:border-color .15s;
   }
   .field select{font-family:var(--font-body);}
-  .field textarea{font-family:var(--font-body);resize:vertical;min-height:50px;}
+  .field textarea{font-family:var(--font-body);resize:vertical;min-height:44px;}
   .field input:focus, .field select:focus, .field textarea:focus{border-color:var(--accent);}
   .field input::placeholder, .field textarea::placeholder{color:#5c574c;}
   .field.full{grid-column:1/-1;}
-  .field .hint{font-size:10.5px;color:#726b5c;margin-top:3px;}
+  .field .hint{font-size:10px;color:#726b5c;margin-top:2px;}
 
   .section-label{
-    font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;
-    margin:14px 0 8px;border-top:1px dashed var(--border);padding-top:12px;
+    font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;
+    margin:12px 0 6px;border-top:1px dashed var(--border);padding-top:10px;
   }
   .section-label:first-of-type{border-top:none;margin-top:0;padding-top:0;}
 
   .btn{
-    font-family:var(--font-display);font-weight:600;font-size:14px;
+    font-family:var(--font-display);font-weight:600;font-size:13px;
     background:var(--accent);color:#1c1b1a;border:none;border-radius:7px;
-    padding:12px 16px;cursor:pointer;width:100%;margin-top:6px;
+    padding:10px 14px;cursor:pointer;width:100%;margin-top:4px;
     transition:filter .15s, transform .1s;
   }
   .btn:hover{filter:brightness(1.08);}
@@ -165,8 +165,8 @@
   }
   .btn.secondary:hover{color:var(--text);border-color:var(--muted);}
   .btn.small{
-    width:auto;padding:6px 12px;font-size:12px;margin-top:0;
-    display:flex;align-items:center;gap:6px;
+    width:auto;padding:5px 10px;font-size:11px;margin-top:0;
+    display:flex;align-items:center;gap:4px;
   }
   .btn.outline{
     background:transparent;border:1px solid var(--accent);color:var(--accent);
@@ -174,75 +174,75 @@
   .btn.outline:hover{background:var(--accent-dim);}
 
   .preview-price{
-    text-align:center;padding:14px 10px 18px;border-bottom:1px solid var(--border);margin-bottom:14px;
+    text-align:center;padding:12px 8px 14px;border-bottom:1px solid var(--border);margin-bottom:12px;
   }
-  .preview-price .lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;}
+  .preview-price .lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;}
   .preview-price .val{
-    font-family:var(--font-mono);font-size:30px;font-weight:700;color:var(--accent);
-    margin-top:4px;
+    font-family:var(--font-mono);font-size:26px;font-weight:700;color:var(--accent);
+    margin-top:3px;
   }
-  @media (min-width: 640px){ .preview-price .val{font-size:36px;} }
-  .preview-price .sub{font-size:12px;color:var(--muted);margin-top:4px;}
+  @media (min-width: 640px){ .preview-price .val{font-size:34px;} }
+  .preview-price .sub{font-size:11px;color:var(--muted);margin-top:3px;}
   .preview-price .sub b{color:var(--good);font-family:var(--font-mono);}
 
   .stack{
-    display:flex;flex-direction:column;gap:3px;margin-bottom:14px;border-radius:6px;overflow:hidden;
+    display:flex;flex-direction:column;gap:2px;margin-bottom:12px;border-radius:6px;overflow:hidden;
   }
   .layer{
-    display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px;
-    padding:6px 8px;
+    display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:6px;
+    padding:5px 6px;
     background-image: repeating-linear-gradient(0deg, rgba(0,0,0,0.16) 0px, rgba(0,0,0,0.16) 1px, transparent 1px, transparent 4px);
     border-radius:3px;
   }
-  .layer .dot{width:8px;height:8px;border-radius:2px;flex-shrink:0;}
-  .layer .name{font-size:12px;color:var(--text);}
-  .layer .amt{font-family:var(--font-mono);font-size:12px;color:var(--text);text-align:right;}
-  .layer.total{border-top:1px solid var(--border);margin-top:4px;padding-top:8px;background-image:none;}
-  .layer.total .name{color:var(--muted);text-transform:uppercase;font-size:10px;letter-spacing:.05em;}
-  .layer.total .amt{font-size:14px;font-weight:700;}
+  .layer .dot{width:7px;height:7px;border-radius:2px;flex-shrink:0;}
+  .layer .name{font-size:11px;color:var(--text);}
+  .layer .amt{font-family:var(--font-mono);font-size:11px;color:var(--text);text-align:right;}
+  .layer.total{border-top:1px solid var(--border);margin-top:3px;padding-top:6px;background-image:none;}
+  .layer.total .name{color:var(--muted);text-transform:uppercase;font-size:9px;letter-spacing:.05em;}
+  .layer.total .amt{font-size:13px;font-weight:700;}
   .layer.margin .amt{color:var(--good);}
   .layer.margin .dot{background:var(--good)!important;}
 
-  .barviz{height:12px;border-radius:4px;overflow:hidden;display:flex;margin-bottom:14px;border:1px solid var(--border);}
+  .barviz{height:10px;border-radius:4px;overflow:hidden;display:flex;margin-bottom:12px;border:1px solid var(--border);}
   .barviz span{height:100%;}
 
-  .table-wrap{margin-top:20px;}
-  table{width:100%;border-collapse:collapse;font-size:12px;}
-  @media (min-width: 640px){ table{font-size:13px;} }
+  .table-wrap{margin-top:16px;}
+  table{width:100%;border-collapse:collapse;font-size:11px;}
+  @media (min-width: 640px){ table{font-size:12px;} }
   thead th{
-    text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.05em;
-    color:var(--muted);padding:0 8px 8px;font-weight:500;border-bottom:1px solid var(--border);
+    text-align:left;font-size:9px;text-transform:uppercase;letter-spacing:.05em;
+    color:var(--muted);padding:0 6px 6px;font-weight:500;border-bottom:1px solid var(--border);
   }
-  tbody td{padding:8px 8px;border-bottom:1px solid var(--border);vertical-align:middle;}
+  tbody td{padding:6px 6px;border-bottom:1px solid var(--border);vertical-align:middle;}
   tbody tr:hover{background:var(--surface-2);}
   td.num, th.num{font-family:var(--font-mono);text-align:right;}
-  td.name{font-weight:500;font-size:12px;}
-  td.name .client{display:block;font-size:10px;color:var(--muted);font-weight:400;margin-top:1px;}
-  td.date{color:var(--muted);font-size:11px;}
+  td.name{font-weight:500;font-size:11px;}
+  td.name .client{display:block;font-size:9px;color:var(--muted);font-weight:400;margin-top:1px;}
+  td.date{color:var(--muted);font-size:10px;}
   .margin-tag{
-    font-family:var(--font-mono);font-size:10px;padding:1px 6px;border-radius:20px;
+    font-family:var(--font-mono);font-size:9px;padding:1px 5px;border-radius:20px;
     background:var(--accent-dim);color:var(--accent);display:inline-block;
   }
-  .row-actions{display:flex;gap:4px;flex-wrap:wrap;}
+  .row-actions{display:flex;gap:3px;flex-wrap:wrap;}
   .icon-btn{
     background:transparent;border:1px solid var(--border);color:var(--muted);
-    border-radius:6px;width:26px;height:26px;cursor:pointer;font-size:11px;
+    border-radius:5px;width:24px;height:24px;cursor:pointer;font-size:10px;
     display:flex;align-items:center;justify-content:center;
   }
   .icon-btn:hover{border-color:var(--bad);color:var(--bad);}
   .icon-btn.pdf:hover{border-color:var(--accent);color:var(--accent);}
-  .icon-btn.sm{width:22px;height:22px;font-size:10px;}
+  .icon-btn.sm{width:20px;height:20px;font-size:9px;}
 
   .empty{
-    text-align:center;padding:30px 16px;color:var(--muted);font-size:13px;
-    border:1px dashed var(--border);border-radius:10px;margin-top:14px;
+    text-align:center;padding:24px 12px;color:var(--muted);font-size:12px;
+    border:1px dashed var(--border);border-radius:10px;margin-top:10px;
   }
-  .empty .big{font-family:var(--font-display);font-size:15px;color:var(--text);margin-bottom:6px;}
+  .empty .big{font-family:var(--font-display);font-size:14px;color:var(--text);margin-bottom:4px;}
 
   .toast{
-    position:fixed;bottom:16px;left:50%;transform:translateX(-50%) translateY(20px);
+    position:fixed;bottom:12px;left:50%;transform:translateX(-50%) translateY(20px);
     background:var(--surface-2);border:1px solid var(--accent);color:var(--text);
-    padding:8px 16px;border-radius:8px;font-size:13px;opacity:0;
+    padding:6px 14px;border-radius:8px;font-size:12px;opacity:0;
     transition:opacity .25s, transform .25s;pointer-events:none;z-index:50;
     max-width:90%;text-align:center;
   }
@@ -253,43 +253,51 @@
   .field-row.single{grid-template-columns:1fr;}
 
   .material-info{
-    font-size:11px;color:var(--muted);background:var(--surface-2);border:1px solid var(--border);
-    border-radius:6px;padding:6px 8px;margin:-2px 0 10px;
+    font-size:10px;color:var(--muted);background:var(--surface-2);border:1px solid var(--border);
+    border-radius:6px;padding:5px 6px;margin:-2px 0 8px;
   }
   .material-info.warn{color:var(--bad);border-color:var(--bad);}
   .material-info b{color:var(--text);font-family:var(--font-mono);}
 
   .mat-row{
-    display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:8px;
-    padding:8px;background:var(--surface-2);border-radius:6px;margin-bottom:6px;
+    display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:6px;
+    padding:6px;background:var(--surface-2);border-radius:6px;margin-bottom:4px;
   }
-  .mat-row .mat-name{font-size:12px;font-weight:500;}
-  .mat-row .mat-meta{font-size:10px;color:var(--muted);margin-top:2px;}
-  .stock-bar{height:4px;border-radius:3px;background:var(--border);overflow:hidden;margin-top:4px;max-width:120px;}
+  .mat-row .mat-name{font-size:11px;font-weight:500;}
+  .mat-row .mat-meta{font-size:9px;color:var(--muted);margin-top:2px;}
+  .stock-bar{height:3px;border-radius:3px;background:var(--border);overflow:hidden;margin-top:3px;max-width:100px;}
   .stock-bar span{display:block;height:100%;background:var(--good);}
   .stock-bar span.low{background:var(--bad);}
 
   .cat-tag{
-    font-family:var(--font-mono);font-size:10px;padding:1px 6px;border-radius:20px;display:inline-block;
+    font-family:var(--font-mono);font-size:9px;padding:1px 5px;border-radius:20px;display:inline-block;
     white-space:nowrap;
   }
   .cat-tag.Filamento{background:#ff6b3522;color:var(--accent);}
   .cat-tag.Resina{background:#4ecdc422;color:var(--good);}
   .cat-tag.Insumo{background:#6fa8dc22;color:#6fa8dc;}
   .cat-tag.Equipo{background:#c9a9e022;color:#c9a9e0;}
-  .cat-tag.Herramienta{background:#c9a9e022;color:#c9a9e0;}
 
-  /* scroll suave en tablas para móviles */
-  .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -8px;padding:0 8px;}
-  @media (max-width: 640px){ .table-scroll table{min-width:520px;} }
+  .table-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -6px;padding:0 6px;}
+  @media (max-width: 640px){ .table-scroll table{min-width:480px;} }
 
-  #comprasStatsBar{
-    display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px;
+  #comprasStatsBar, #ventasStatsBar{
+    display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;
   }
-  @media (min-width: 480px){ #comprasStatsBar{grid-template-columns:1fr 1fr 1fr 1fr;} }
-  #comprasStatsBar .stat{text-align:left;flex:none;}
-  #comprasStatsBar .stat .num{font-size:16px;}
-  #comprasStatsBar .stat .lbl{font-size:9px;}
+  @media (min-width: 480px){ #comprasStatsBar, #ventasStatsBar{grid-template-columns:1fr 1fr 1fr 1fr;} }
+  #comprasStatsBar .stat, #ventasStatsBar .stat{text-align:left;flex:none;}
+  #comprasStatsBar .stat .num, #ventasStatsBar .stat .num{font-size:14px;}
+  #comprasStatsBar .stat .lbl, #ventasStatsBar .stat .lbl{font-size:8px;}
+
+  .producto-item{
+    display:flex;justify-content:space-between;align-items:center;
+    padding:6px 8px;background:var(--surface-2);border-radius:6px;margin-bottom:4px;
+    font-size:12px;
+  }
+  .producto-item .info{display:flex;flex-direction:column;gap:1px;}
+  .producto-item .info .nombre{font-weight:500;}
+  .producto-item .info .detalle{font-size:10px;color:var(--muted);}
+  .producto-item .acciones{display:flex;gap:4px;}
 </style>
 </head>
 <body>
@@ -317,7 +325,7 @@
 
     <button class="btn" id="btnAuthSubmit">Iniciar sesión</button>
     <div class="auth-toggle" id="authToggle">
-      ¿Necesitas acceso? Pide al encargado del taller que te cree un usuario desde el panel de Firebase.
+      ¿Necesitas acceso? Pide al encargado del taller que te cree un usuario desde Firebase.
     </div>
   </div>
 </div>
@@ -337,7 +345,7 @@
       </svg>
       <div>
         <h1>3Dboys</h1>
-        <p>Registro de trabajos e impresión de costos</p>
+        <p>Gestión de trabajos, compras y ventas</p>
       </div>
     </div>
     <div class="stats" id="statsBar">
@@ -349,12 +357,13 @@
   </header>
 
   <div class="cloud-note">
-    <div class="left"><span class="dot"></span> <span id="cloudNoteText">Conectado — tus trabajos se guardan en Firebase.</span></div>
+    <div class="left"><span class="dot"></span> <span id="cloudNoteText">Conectado — datos en la nube.</span></div>
     <button id="btnLogout">Cerrar sesión</button>
   </div>
 
   <div class="tabs">
     <button class="tab-btn active" data-tab="trabajos">📋 Trabajos</button>
+    <button class="tab-btn" data-tab="ventas">💰 Ventas</button>
     <button class="tab-btn" data-tab="compras">📦 Compras</button>
     <button class="tab-btn" data-tab="inventario">📊 Inventario</button>
   </div>
@@ -465,22 +474,82 @@
 
   <div class="table-wrap">
     <div class="card" style="padding:0; overflow:hidden;">
-      <div style="padding:14px 16px 4px;">
+      <div style="padding:12px 14px 2px;">
         <div class="card-head-row">
           <h2 style="margin-bottom:0;"><span class="accent-dot"></span> Historial de trabajos</h2>
           <button class="btn small outline" id="btnReportePDF">📄 Reporte</button>
         </div>
       </div>
-      <div class="table-scroll" id="tableContainer" style="padding:0 16px 16px;"></div>
+      <div class="table-scroll" id="tableContainer" style="padding:0 14px 14px;"></div>
     </div>
   </div>
 
   </div><!-- /tabTrabajos -->
 
-  <!-- ========== TAB 2: COMPRAS ========== -->
+  <!-- ========== TAB 2: VENTAS ========== -->
+  <div id="tabVentas" class="tab-panel">
+
+    <div class="stats" id="ventasStatsBar">
+      <div class="stat"><div class="num" id="statVentasTotal">Bs 0</div><div class="lbl">Total vendido</div></div>
+      <div class="stat"><div class="num" id="statVentasMes">Bs 0</div><div class="lbl">Este mes</div></div>
+      <div class="stat"><div class="num" id="statProductosStock">0</div><div class="lbl">Productos en stock</div></div>
+      <div class="stat"><div class="num" id="statProductosVendidos">0</div><div class="lbl">Unidades vendidas</div></div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h2><span class="accent-dot"></span> Registrar venta</h2>
+
+        <div class="field full">
+          <label>Producto / trabajo impreso</label>
+          <select id="v_productoId">
+            <option value="">-- Seleccionar producto --</option>
+          </select>
+          <div class="hint">Selecciona un trabajo previo para vender sus unidades impresas.</div>
+        </div>
+
+        <div class="field-row">
+          <div class="field"><label>Cantidad vendida</label><input type="number" id="v_cantidad" min="1" step="1" placeholder="1"></div>
+          <div class="field"><label>Precio unitario (Bs)</label><input type="number" id="v_precioUnitario" min="0" step="0.1" placeholder="50"></div>
+        </div>
+
+        <div class="field-row">
+          <div class="field"><label>Cliente</label><input type="text" id="v_cliente" placeholder="Nombre del cliente"></div>
+          <div class="field"><label>Fecha</label><input type="date" id="v_fecha"></div>
+        </div>
+
+        <div class="field full">
+          <label>Notas</label>
+          <textarea id="v_notas" placeholder="Detalles adicionales de la venta"></textarea>
+        </div>
+
+        <button class="btn" id="btnRegistrarVenta">Registrar venta</button>
+      </div>
+
+      <div class="card">
+        <h2><span class="accent-dot"></span> Productos en stock</h2>
+        <div id="productosStockContainer" style="max-height:320px;overflow-y:auto;"></div>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <div class="card" style="padding:0; overflow:hidden;">
+        <div style="padding:12px 14px 2px;">
+          <div class="card-head-row">
+            <h2 style="margin-bottom:0;"><span class="accent-dot"></span> Historial de ventas</h2>
+            <button class="btn small outline" id="btnReporteVentasPDF">📄 Reporte</button>
+          </div>
+        </div>
+        <div class="table-scroll" id="ventasContainer" style="padding:0 14px 14px;"></div>
+      </div>
+    </div>
+
+  </div><!-- /tabVentas -->
+
+  <!-- ========== TAB 3: COMPRAS ========== -->
   <div id="tabCompras" class="tab-panel">
 
-    <div class="stats" id="comprasStatsBar" style="margin-bottom:16px;">
+    <div class="stats" id="comprasStatsBar" style="margin-bottom:14px;">
       <div class="stat"><div class="num" id="statInvertido">Bs 0</div><div class="lbl">Invertido total</div></div>
       <div class="stat"><div class="num" id="statInvertidoMes">Bs 0</div><div class="lbl">Este mes</div></div>
       <div class="stat"><div class="num" id="statValorStock">Bs 0</div><div class="lbl">Valor inventario</div></div>
@@ -541,28 +610,28 @@
 
       <div class="card">
         <h2><span class="accent-dot"></span> Últimas compras</h2>
-        <div id="purchasesMiniContainer" style="max-height:300px;overflow-y:auto;"></div>
+        <div id="purchasesMiniContainer" style="max-height:280px;overflow-y:auto;"></div>
       </div>
     </div>
 
     <div class="table-wrap">
       <div class="card" style="padding:0; overflow:hidden;">
-        <div style="padding:14px 16px 4px;">
+        <div style="padding:12px 14px 2px;">
           <div class="card-head-row">
             <h2 style="margin-bottom:0;"><span class="accent-dot"></span> Historial de compras</h2>
             <button class="btn small outline" id="btnReporteComprasPDF">📄 Reporte</button>
           </div>
         </div>
-        <div class="table-scroll" id="purchasesContainer" style="padding:0 16px 16px;"></div>
+        <div class="table-scroll" id="purchasesContainer" style="padding:0 14px 14px;"></div>
       </div>
     </div>
 
   </div><!-- /tabCompras -->
 
-  <!-- ========== TAB 3: INVENTARIO ========== -->
+  <!-- ========== TAB 4: INVENTARIO ========== -->
   <div id="tabInventario" class="tab-panel">
 
-    <div class="stats" id="inventarioStatsBar" style="margin-bottom:16px;display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+    <div class="stats" id="inventarioStatsBar" style="margin-bottom:14px;display:grid;grid-template-columns:1fr 1fr;gap:8px;">
       <div class="stat"><div class="num" id="invTotalMateriales">0</div><div class="lbl">Materiales</div></div>
       <div class="stat"><div class="num" id="invValorTotal">Bs 0</div><div class="lbl">Valor total</div></div>
       <div class="stat"><div class="num" id="invBajoStock">0</div><div class="lbl">Con bajo stock</div></div>
@@ -574,7 +643,7 @@
         <h2 style="margin-bottom:0;"><span class="accent-dot"></span> Inventario de materiales</h2>
         <button class="btn small outline" id="btnExportInventarioPDF">📄 Exportar</button>
       </div>
-      <div id="materialsContainer" style="margin-top:12px;"></div>
+      <div id="materialsContainer" style="margin-top:10px;"></div>
     </div>
 
   </div><!-- /tabInventario -->
@@ -661,10 +730,16 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
     btn.classList.add('active');
-    const target = btn.dataset.tab === 'trabajos' ? 'tabTrabajos' :
-                   btn.dataset.tab === 'compras' ? 'tabCompras' : 'tabInventario';
+    const targetMap = {
+      trabajos: 'tabTrabajos',
+      ventas: 'tabVentas',
+      compras: 'tabCompras',
+      inventario: 'tabInventario'
+    };
+    const target = targetMap[btn.dataset.tab] || 'tabTrabajos';
     $(target).classList.add('active');
     if(btn.dataset.tab === 'inventario') renderInventarioTab();
+    if(btn.dataset.tab === 'ventas') renderVentasAll();
   });
 });
 
@@ -679,6 +754,8 @@ const FIELD_IDS = ['f_nombre','f_cliente','f_descripcion','f_gramos','f_precioKg
 let jobs = [];
 let materials = [];
 let purchases = [];
+let sales = [];
+let products = []; // productos impresos para stock y ventas
 
 function num(v){ const n = parseFloat(v); return isNaN(n) ? 0 : n; }
 function money(v){ return 'Bs ' + v.toLocaleString('es-BO', {minimumFractionDigits:2, maximumFractionDigits:2}); }
@@ -930,7 +1007,7 @@ window.deleteJob = async function(id){
 async function persistState(){
   if(!currentUid) return;
   try{
-    await db.collection(COLLECTION).doc(SHARED_DOC_ID).set({ jobs, materials, purchases }, { merge: true });
+    await db.collection(COLLECTION).doc(SHARED_DOC_ID).set({ jobs, materials, purchases, sales, products }, { merge: true });
   }catch(e){
     console.error('Error guardando datos', e);
     showToast('No se pudo guardar en la nube.');
@@ -965,6 +1042,8 @@ async function loadFromStorage(){
         costoPromedio: (m.costoPromedio !== undefined) ? m.costoPromedio : (m.avgCostPerKg !== undefined ? m.avgCostPerKg / 1000 : 0)
       }));
       purchases = data.purchases || [];
+      sales = data.sales || [];
+      products = data.products || [];
       const d = data.defaults;
       if(d){
         if(d.precioKg !== undefined) $('f_precioKgManual').value = d.precioKg;
@@ -977,18 +1056,21 @@ async function loadFromStorage(){
         if(d.margen !== undefined) $('f_margen').value = d.margen;
       }
     }else{
-      jobs = []; materials = []; purchases = [];
+      jobs = []; materials = []; purchases = []; sales = []; products = [];
     }
   }catch(e){
     console.error('Error leyendo datos', e);
     showToast('No se pudo conectar a la nube.');
-    jobs = []; materials = []; purchases = [];
+    jobs = []; materials = []; purchases = []; sales = []; products = [];
   }
   renderAll();
   renderMaterialSelectOptions();
   renderComprasAll();
+  renderVentasAll();
   refreshMaterialesDatalist();
   if(!$('c_fecha').value) $('c_fecha').valueAsDate = new Date();
+  if(!$('v_fecha').value) $('v_fecha').valueAsDate = new Date();
+  populateProductSelect();
 }
 
 function clearForm(keepDefaults=true){
@@ -1018,7 +1100,26 @@ $('btnGuardar').addEventListener('click', async () => {
     return;
   }
   const c = calcular(d);
-  jobs.push({ id: 'job_' + Date.now() + '_' + Math.random().toString(36).slice(2,7), createdAt: Date.now(), data: d, calc: c });
+  const jobId = 'job_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
+  jobs.push({ id: jobId, createdAt: Date.now(), data: d, calc: c });
+
+  // Crear producto asociado para ventas (stock inicial 0, se puede vender después de imprimir)
+  const precioSugerido = c.precioVenta;
+  // Buscar si ya existe producto con mismo nombre
+  let existingProd = products.find(p => p.nombre === d.nombre && p.jobId === jobId);
+  if(!existingProd){
+    products.push({
+      id: 'prod_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
+      jobId: jobId,
+      nombre: d.nombre,
+      descripcion: d.descripcion || '',
+      precioSugerido: precioSugerido,
+      costoTotal: c.costoTotal,
+      stock: 0,
+      vendidos: 0,
+      createdAt: Date.now()
+    });
+  }
 
   if(d.materialId && d.materialId !== 'manual'){
     const m = materials.find(x => x.id === d.materialId);
@@ -1029,13 +1130,185 @@ $('btnGuardar').addEventListener('click', async () => {
   await persistDefaults(d);
   renderAll();
   renderMaterialSelectOptions();
-  showToast('Trabajo guardado en la nube');
+  populateProductSelect();
+  showToast('Trabajo guardado y producto creado para ventas');
   clearForm(true);
   $('f_nombre').focus();
 });
 
 $('btnLimpiar').addEventListener('click', () => clearForm(true));
 FIELD_IDS.forEach(id => $(id).addEventListener('input', renderPreview));
+
+/* ---------------- VENTAS ---------------- */
+
+function populateProductSelect(){
+  const sel = $('v_productoId');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">-- Seleccionar producto --</option>' +
+    products.map(p => `<option value="${p.id}">${escapeHtml(p.nombre)} (stock: ${p.stock})</option>`).join('');
+  if(products.some(p => p.id === current)) sel.value = current;
+  // Autocompletar precio sugerido
+  $('v_productoId').addEventListener('change', () => {
+    const prod = products.find(p => p.id === $('v_productoId').value);
+    if(prod && prod.precioSugerido){
+      $('v_precioUnitario').value = prod.precioSugerido;
+    }
+  });
+}
+
+function renderVentasStats(){
+  const totalVendido = sales.reduce((a,s)=> a + (s.cantidad * s.precioUnitario), 0);
+  const now = new Date();
+  const mesActual = sales.filter(s => {
+    const f = new Date(s.fecha);
+    return f.getMonth() === now.getMonth() && f.getFullYear() === now.getFullYear();
+  }).reduce((a,s)=> a + (s.cantidad * s.precioUnitario), 0);
+  const totalStock = products.reduce((a,p)=> a + p.stock, 0);
+  const totalVendidos = sales.reduce((a,s)=> a + s.cantidad, 0);
+
+  $('statVentasTotal').textContent = money(totalVendido);
+  $('statVentasMes').textContent = money(mesActual);
+  $('statProductosStock').textContent = totalStock;
+  $('statProductosVendidos').textContent = totalVendidos;
+}
+
+function renderProductosStock(){
+  const container = $('productosStockContainer');
+  const prodConStock = products.filter(p => p.stock > 0);
+  if(prodConStock.length === 0){
+    container.innerHTML = `<div class="empty" style="padding:16px;font-size:11px;">No hay productos con stock disponible.</div>`;
+    return;
+  }
+  container.innerHTML = prodConStock.map(p => `
+    <div class="producto-item">
+      <div class="info">
+        <span class="nombre">${escapeHtml(p.nombre)}</span>
+        <span class="detalle">Stock: ${p.stock} · Precio sugerido: ${money(p.precioSugerido)}</span>
+      </div>
+      <div class="acciones">
+        <button class="icon-btn sm" title="Ajustar stock" onclick="ajustarStockProducto('${p.id}')">✎</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+window.ajustarStockProducto = async function(id){
+  const p = products.find(x => x.id === id);
+  if(!p) return;
+  const nuevo = prompt('Nuevo stock para "' + p.nombre + '":', p.stock);
+  if(nuevo === null) return;
+  p.stock = num(nuevo);
+  await persistState();
+  renderVentasAll();
+  showToast('Stock actualizado');
+};
+
+function renderVentas(){
+  const container = $('ventasContainer');
+  if(sales.length === 0){
+    container.innerHTML = `
+      <div class="empty">
+        <div class="big">Todavía no hay ventas registradas</div>
+        Registra una venta de un producto impreso para llevar el control de stock.
+      </div>`;
+    return;
+  }
+  const sorted = [...sales].sort((a,b)=> b.fecha - a.fecha);
+  container.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>Fecha</th><th>Producto</th><th>Cliente</th>
+          <th class="num">Cantidad</th><th class="num">Precio unit.</th><th class="num">Total</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+        ${sorted.map(s => {
+          const prod = products.find(p => p.id === s.productoId);
+          return `
+          <tr>
+            <td class="date">${new Date(s.fecha).toLocaleDateString('es-BO', {day:'2-digit', month:'short', year:'numeric'})}</td>
+            <td class="name">${escapeHtml(prod ? prod.nombre : s.productoNombre || 'Desconocido')}</td>
+            <td class="date">${escapeHtml(s.cliente || '-')}</td>
+            <td class="num">${s.cantidad}</td>
+            <td class="num">${money(s.precioUnitario)}</td>
+            <td class="num">${money(s.cantidad * s.precioUnitario)}</td>
+            <td>
+              <div class="row-actions">
+                <button class="icon-btn sm" title="Eliminar" onclick="deleteSale('${s.id}')">✕</button>
+              </div>
+            </td>
+          </tr>`;
+        }).join('')}
+      </tbody>
+    </table>`;
+}
+
+window.deleteSale = async function(id){
+  const sale = sales.find(s => s.id === id);
+  if(sale){
+    // Devolver stock
+    const prod = products.find(p => p.id === sale.productoId);
+    if(prod){
+      prod.stock += sale.cantidad;
+      prod.vendidos -= sale.cantidad;
+    }
+  }
+  sales = sales.filter(s => s.id !== id);
+  await persistState();
+  renderVentasAll();
+  showToast('Venta eliminada y stock restaurado');
+};
+
+$('btnRegistrarVenta').addEventListener('click', async () => {
+  const productoId = $('v_productoId').value;
+  const cantidad = num($('v_cantidad').value);
+  const precioUnitario = num($('v_precioUnitario').value);
+  const cliente = $('v_cliente').value.trim();
+  const fecha = $('v_fecha').value ? new Date($('v_fecha').value + 'T12:00:00').getTime() : Date.now();
+  const notas = $('v_notas').value.trim();
+
+  if(!productoId){ showToast('Selecciona un producto'); return; }
+  if(cantidad <= 0){ showToast('Ingresa una cantidad válida'); $('v_cantidad').focus(); return; }
+  if(precioUnitario <= 0){ showToast('Ingresa un precio unitario'); $('v_precioUnitario').focus(); return; }
+
+  const prod = products.find(p => p.id === productoId);
+  if(!prod){ showToast('Producto no encontrado'); return; }
+  if(prod.stock < cantidad){
+    showToast('Stock insuficiente. Disponible: ' + prod.stock);
+    return;
+  }
+
+  // Registrar venta
+  sales.push({
+    id: 'sale_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
+    productoId: productoId,
+    productoNombre: prod.nombre,
+    cantidad,
+    precioUnitario,
+    cliente,
+    notas,
+    fecha,
+    createdAt: Date.now()
+  });
+
+  // Actualizar stock del producto
+  prod.stock -= cantidad;
+  prod.vendidos = (prod.vendidos || 0) + cantidad;
+
+  await persistState();
+  renderVentasAll();
+  populateProductSelect();
+  showToast('Venta registrada correctamente');
+
+  $('v_cantidad').value = '';
+  $('v_precioUnitario').value = '';
+  $('v_cliente').value = '';
+  $('v_notas').value = '';
+  $('v_fecha').valueAsDate = new Date();
+});
+
+function renderVentasAll(){ renderVentasStats(); renderProductosStock(); renderVentas(); }
 
 /* ---------------- COMPRAS Y MATERIALES ---------------- */
 
@@ -1178,11 +1451,11 @@ function renderPurchasesMini(){
   const c = $('purchasesMiniContainer');
   const sorted = [...purchases].sort((a,b)=> b.fecha - a.fecha).slice(0,5);
   if(sorted.length === 0){
-    c.innerHTML = `<div class="empty" style="padding:20px;font-size:12px;">Sin compras recientes</div>`;
+    c.innerHTML = `<div class="empty" style="padding:16px;font-size:11px;">Sin compras recientes</div>`;
     return;
   }
   c.innerHTML = sorted.map(p => `
-    <div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);font-size:12px;">
+    <div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:11px;">
       <span>${escapeHtml(p.nombre)}</span>
       <span style="font-family:var(--font-mono);color:var(--accent);">${money(p.precioTotal)}</span>
     </div>
@@ -1261,7 +1534,6 @@ function renderInventarioTab(){
   $('invValorTotal').textContent = money(valorTotal);
   $('invBajoStock').textContent = bajoStock;
 
-  // reusamos el contenedor de materiales
   const c = $('materialsContainer');
   if(materials.length === 0){
     c.innerHTML = `
@@ -1444,6 +1716,45 @@ $('btnReportePDF').addEventListener('click', () => {
   pdfFooter(doc);
   doc.save('3Dboys_reporte_trabajos.pdf');
   showToast('Reporte PDF generado');
+});
+
+$('btnReporteVentasPDF').addEventListener('click', () => {
+  if(sales.length === 0){ showToast('No hay ventas para exportar'); return; }
+  if(!window.jspdf){ showToast('La librería de PDF no cargó'); return; }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  pdfHeader(doc, 'Reporte de ventas');
+
+  const sorted = [...sales].sort((a,b)=> b.fecha - a.fecha);
+  const rows = sorted.map(s => {
+    const prod = products.find(p => p.id === s.productoId);
+    return [
+      new Date(s.fecha).toLocaleDateString('es-BO'),
+      prod ? prod.nombre : s.productoNombre || '-',
+      s.cliente || '-',
+      s.cantidad,
+      money(s.precioUnitario),
+      money(s.cantidad * s.precioUnitario)
+    ];
+  });
+
+  doc.autoTable({
+    startY: 38,
+    head: [['Fecha', 'Producto', 'Cliente', 'Cantidad', 'Precio unit.', 'Total']],
+    body: rows,
+    styles: { fontSize: 8, cellPadding: 3 },
+    headStyles: { fillColor: [36, 34, 32] },
+    columnStyles: { 3:{halign:'right'}, 4:{halign:'right'}, 5:{halign:'right'} }
+  });
+
+  const finalY = doc.lastAutoTable.finalY + 10;
+  const total = sales.reduce((a,s)=> a + (s.cantidad * s.precioUnitario), 0);
+  doc.setFontSize(10); doc.setTextColor(30); doc.setFont(undefined, 'bold');
+  doc.text('Total vendido: ' + money(total), 14, finalY);
+
+  pdfFooter(doc);
+  doc.save('3Dboys_reporte_ventas.pdf');
+  showToast('Reporte de ventas PDF generado');
 });
 
 $('btnReporteComprasPDF').addEventListener('click', () => {
