@@ -224,6 +224,46 @@
   }
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
   #appRoot{display:none;}
+
+  .tabs{display:flex;gap:8px;margin-bottom:22px;}
+  .tab-btn{
+    font-family:var(--font-display);font-weight:600;font-size:13px;
+    background:transparent;border:1px solid var(--border);color:var(--muted);
+    padding:9px 16px;border-radius:8px;cursor:pointer;transition:all .15s;
+  }
+  .tab-btn:hover{color:var(--text);border-color:var(--muted);}
+  .tab-btn.active{background:var(--accent);color:#1c1b1a;border-color:var(--accent);}
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block;}
+
+  .hidden{display:none !important;}
+  .field-row.single{grid-template-columns:1fr;}
+
+  .material-info{
+    font-size:12px;color:var(--muted);background:var(--surface-2);border:1px solid var(--border);
+    border-radius:6px;padding:8px 10px;margin:-4px 0 12px;
+  }
+  .material-info.warn{color:var(--bad);border-color:var(--bad);}
+  .material-info b{color:var(--text);font-family:var(--font-mono);}
+
+  .mat-row{
+    display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:10px;
+    padding:10px;background:var(--surface-2);border-radius:6px;margin-bottom:6px;
+  }
+  .mat-row .mat-name{font-size:13px;font-weight:500;}
+  .mat-row .mat-meta{font-size:11px;color:var(--muted);margin-top:3px;}
+  .stock-bar{height:5px;border-radius:3px;background:var(--border);overflow:hidden;margin-top:5px;max-width:160px;}
+  .stock-bar span{display:block;height:100%;background:var(--good);}
+  .stock-bar span.low{background:var(--bad);}
+
+  .cat-tag{
+    font-family:var(--font-mono);font-size:11px;padding:2px 8px;border-radius:20px;display:inline-block;
+    white-space:nowrap;
+  }
+  .cat-tag.Filamento{background:#ff6b3522;color:var(--accent);}
+  .cat-tag.Resina{background:#4ecdc422;color:var(--good);}
+  .cat-tag.Insumo{background:#6fa8dc22;color:#6fa8dc;}
+  .cat-tag.Equipo{background:#c9a9e022;color:#c9a9e0;}
 </style>
 </head>
 <body>
@@ -287,6 +327,13 @@
     <button id="btnLogout">Cerrar sesión</button>
   </div>
 
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="trabajos">Trabajos</button>
+    <button class="tab-btn" data-tab="compras">Compras y Materiales</button>
+  </div>
+
+  <div id="tabTrabajos" class="tab-panel active">
+
   <div class="grid">
     <div class="card">
       <h2><span class="accent-dot"></span> Nuevo trabajo</h2>
@@ -307,10 +354,18 @@
       </div>
 
       <div class="section-label">Material</div>
-      <div class="field-row">
-        <div class="field"><label>Filamento usado (g)</label><input type="number" id="f_gramos" min="0" step="0.1" placeholder="120"></div>
-        <div class="field"><label>Precio filamento (Bs/kg)</label><input type="number" id="f_precioKg" min="0" step="0.1" placeholder="180"></div>
+      <div class="field full">
+        <label>Material a usar</label>
+        <select id="f_materialId">
+          <option value="manual">Otro / material no registrado (ingreso manual)</option>
+        </select>
+        <div class="hint">Los materiales aparecen aquí cuando los registras en "Compras y Materiales".</div>
       </div>
+      <div class="field-row">
+        <div class="field"><label>Cantidad usada (g)</label><input type="number" id="f_gramos" min="0" step="0.1" placeholder="120"></div>
+        <div class="field" id="f_precioKgManualField"><label>Precio filamento (Bs/kg)</label><input type="number" id="f_precioKgManual" min="0" step="0.1" placeholder="95"></div>
+      </div>
+      <div class="material-info hidden" id="f_materialInfo"></div>
 
       <div class="section-label">Impresión</div>
       <div class="field-row">
@@ -325,7 +380,6 @@
           <option value="Creality Ender 3 S1 / Neo (FDM)" data-watts="350">Creality Ender 3 S1 / Neo (FDM)</option>
           <option value="Creality CR-10 (FDM)" data-watts="270">Creality CR-10 (FDM)</option>
           <option value="Creality K1 (FDM)" data-watts="350">Creality K1 (FDM)</option>
-          <option value="Creality HI COMBO" data-watts="350">Creality HI COMBO</option>
           <option value="Anycubic Kobra 2 (FDM)" data-watts="300">Anycubic Kobra 2 (FDM)</option>
           <option value="Prusa i3 MK3S+ (FDM)" data-watts="240">Prusa i3 MK3S+ (FDM)</option>
           <option value="Bambu Lab P1P / P1S (FDM)" data-watts="350">Bambu Lab P1P / P1S (FDM)</option>
@@ -392,6 +446,75 @@
       <div id="tableContainer" style="padding:0 22px 22px;"></div>
     </div>
   </div>
+
+  </div><!-- /tabTrabajos -->
+
+  <div id="tabCompras" class="tab-panel">
+
+    <div class="stats" id="comprasStatsBar" style="margin-bottom:22px;justify-content:flex-start;gap:34px;">
+      <div class="stat" style="text-align:left;"><div class="num" id="statInvertido">Bs 0</div><div class="lbl">Invertido total</div></div>
+      <div class="stat" style="text-align:left;"><div class="num" id="statInvertidoMes">Bs 0</div><div class="lbl">Gasto este mes</div></div>
+      <div class="stat" style="text-align:left;"><div class="num" id="statValorStock">Bs 0</div><div class="lbl">Valor en inventario</div></div>
+      <div class="stat" style="text-align:left;"><div class="num" id="statEquipos">Bs 0</div><div class="lbl">Invertido en equipos</div></div>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h2><span class="accent-dot"></span> Registrar compra</h2>
+
+        <div class="field full">
+          <label>Categoría</label>
+          <select id="c_categoria">
+            <option value="Filamento">Filamento</option>
+            <option value="Resina">Resina</option>
+            <option value="Insumo">Insumo / otro material consumible</option>
+            <option value="Equipo">Equipo / herramienta (impresora, repuestos, etc.)</option>
+          </select>
+        </div>
+
+        <div class="field full">
+          <label id="c_nombreLabel">Nombre del material</label>
+          <input type="text" id="c_nombre" list="materialesDatalist" placeholder="Ej: PLA Rojo 1.75mm">
+          <datalist id="materialesDatalist"></datalist>
+        </div>
+
+        <div class="field-row" id="c_camposRow">
+          <div class="field" id="c_cantidadField"><label>Cantidad comprada (g)</label><input type="number" id="c_cantidad" min="0" step="1" placeholder="1000"></div>
+          <div class="field"><label>Precio total pagado (Bs)</label><input type="number" id="c_precioTotal" min="0" step="0.1" placeholder="95"></div>
+        </div>
+
+        <div class="field-row">
+          <div class="field"><label>Proveedor</label><input type="text" id="c_proveedor" placeholder="Ej: Ferretería Central"></div>
+          <div class="field"><label>Fecha</label><input type="date" id="c_fecha"></div>
+        </div>
+
+        <div class="field full">
+          <label>Notas</label>
+          <textarea id="c_notas" placeholder="Detalles adicionales de la compra"></textarea>
+        </div>
+
+        <button class="btn" id="btnGuardarCompra">Guardar compra</button>
+      </div>
+
+      <div class="card">
+        <h2><span class="accent-dot"></span> Inventario de materiales</h2>
+        <div id="materialsContainer"></div>
+      </div>
+    </div>
+
+    <div class="table-wrap">
+      <div class="card" style="padding:0; overflow:hidden;">
+        <div style="padding:20px 22px 6px;">
+          <div class="card-head-row">
+            <h2 style="margin-bottom:0;"><span class="accent-dot"></span> Historial de compras</h2>
+            <button class="btn small outline" id="btnReporteComprasPDF">Exportar reporte PDF</button>
+          </div>
+        </div>
+        <div id="purchasesContainer" style="padding:0 22px 22px;"></div>
+      </div>
+    </div>
+
+  </div><!-- /tabCompras -->
 
 </div>
 </div>
@@ -478,15 +601,27 @@ auth.onAuthStateChanged(async (user) => {
 
 /* ---------------- APP LOGIC ---------------- */
 
+document.querySelectorAll('.tab-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    btn.classList.add('active');
+    const target = btn.dataset.tab === 'compras' ? 'tabCompras' : 'tabTrabajos';
+    $(target).classList.add('active');
+  });
+});
+
 const COLORS = {
   material: '#ff6b35', energia: '#e8b83f', mantenimiento: '#8b93a0',
   manoObra: '#c9a9e0', otros: '#6fa8dc', fallas: '#e8595a', margen: '#4ecdc4'
 };
 
-const FIELD_IDS = ['f_nombre','f_cliente','f_descripcion','f_gramos','f_precioKg','f_horasImp','f_minImp',
+const FIELD_IDS = ['f_nombre','f_cliente','f_descripcion','f_gramos','f_precioKgManual','f_horasImp','f_minImp',
   'f_watts','f_mantenimiento','f_horasTrabajo','f_tarifaHora','f_otros','f_fallas','f_margen'];
 
 let jobs = [];
+let materials = [];
+let purchases = [];
 
 function num(v){ const n = parseFloat(v); return isNaN(n) ? 0 : n; }
 function money(v){ return 'Bs ' + v.toLocaleString('es-BO', {minimumFractionDigits:2, maximumFractionDigits:2}); }
@@ -501,12 +636,23 @@ function showToast(msg){
 function readForm(){
   const horasImp = num($('f_horasImp').value);
   const minImp = num($('f_minImp').value);
+  const materialId = $('f_materialId').value;
+  let precioKg, materialNombre;
+  if(materialId === 'manual'){
+    precioKg = num($('f_precioKgManual').value);
+    materialNombre = '';
+  }else{
+    const m = materials.find(x => x.id === materialId);
+    precioKg = m ? m.avgCostPerKg : 0;
+    materialNombre = m ? m.nombre : '';
+  }
   return {
     nombre: $('f_nombre').value.trim(),
     cliente: $('f_cliente').value.trim(),
     descripcion: $('f_descripcion').value.trim(),
+    materialId, materialNombre,
     gramos: num($('f_gramos').value),
-    precioKg: num($('f_precioKg').value),
+    precioKg,
     horasImp, minImp,
     horasImpresion: horasImp + (minImp / 60),
     tipoImpresora: $('f_tipoImpresora').value,
@@ -536,6 +682,43 @@ function calcular(d){
 }
 
 function tiempoStr(d){ return (d.horasImp||0) + 'h ' + (d.minImp||0) + 'min'; }
+
+function renderMaterialSelectOptions(){
+  const sel = $('f_materialId');
+  const current = sel.value;
+  sel.innerHTML = '<option value="manual">Otro / material no registrado (ingreso manual)</option>' +
+    materials.filter(m => m.categoria !== 'Equipo').map(m =>
+      `<option value="${m.id}">${escapeHtml(m.nombre)} — stock: ${m.stockGramos.toFixed(0)}g — ${money(m.avgCostPerKg)}/kg</option>`
+    ).join('');
+  if(materials.some(m => m.id === current)) sel.value = current;
+  updateMaterialSelectionUI();
+}
+
+function updateMaterialSelectionUI(){
+  const sel = $('f_materialId');
+  const val = sel.value;
+  const manualField = $('f_precioKgManualField');
+  const info = $('f_materialInfo');
+  if(val === 'manual'){
+    manualField.classList.remove('hidden');
+    info.classList.add('hidden');
+  }else{
+    manualField.classList.add('hidden');
+    const m = materials.find(x => x.id === val);
+    if(m){
+      const gramos = num($('f_gramos').value);
+      const suficiente = gramos <= m.stockGramos;
+      info.classList.remove('hidden');
+      info.classList.toggle('warn', !suficiente);
+      info.innerHTML = 'Precio usado: <b>' + money(m.avgCostPerKg) + '/kg</b> · Stock disponible: <b>' + m.stockGramos.toFixed(0) + ' g</b>' +
+        (suficiente ? '' : ' · ⚠ No alcanza el stock, quedará en negativo');
+    }
+  }
+  renderPreview();
+}
+
+$('f_materialId').addEventListener('change', updateMaterialSelectionUI);
+$('f_gramos').addEventListener('input', updateMaterialSelectionUI);
 
 function renderPreview(){
   const d = readForm();
@@ -641,8 +824,9 @@ window.loadJob = function(id){
   $('f_nombre').value = j.data.nombre;
   $('f_cliente').value = j.data.cliente || '';
   $('f_descripcion').value = j.data.descripcion || '';
+  $('f_materialId').value = (j.data.materialId && materials.some(m => m.id === j.data.materialId)) ? j.data.materialId : 'manual';
   $('f_gramos').value = j.data.gramos;
-  $('f_precioKg').value = j.data.precioKg;
+  $('f_precioKgManual').value = j.data.precioKg;
   $('f_horasImp').value = j.data.horasImp;
   $('f_minImp').value = j.data.minImp;
   $('f_tipoImpresora').value = j.data.tipoImpresora || '';
@@ -654,6 +838,7 @@ window.loadJob = function(id){
   $('f_otros').value = j.data.otros;
   $('f_fallas').value = j.data.fallas;
   $('f_margen').value = j.data.margen;
+  updateMaterialSelectionUI();
   renderPreview();
   window.scrollTo({top:0, behavior:'smooth'});
   showToast('Datos cargados en el formulario');
@@ -661,17 +846,17 @@ window.loadJob = function(id){
 
 window.deleteJob = async function(id){
   jobs = jobs.filter(j => j.id !== id);
-  await persistJobs();
+  await persistState();
   renderAll();
   showToast('Trabajo eliminado');
 };
 
 /* ---------------- FIRESTORE PERSISTENCE ---------------- */
 
-async function persistJobs(){
+async function persistState(){
   if(!currentUid) return;
   try{
-    await db.collection(COLLECTION).doc(SHARED_DOC_ID).set({ jobs }, { merge: true });
+    await db.collection(COLLECTION).doc(SHARED_DOC_ID).set({ jobs, materials, purchases }, { merge: true });
   }catch(e){
     console.error('Error guardando datos', e);
     showToast('No se pudo guardar en la nube. Revisa tu conexión.');
@@ -697,9 +882,11 @@ async function loadFromStorage(){
     if(snap.exists){
       const data = snap.data();
       jobs = data.jobs || [];
+      materials = data.materials || [];
+      purchases = data.purchases || [];
       const d = data.defaults;
       if(d){
-        if(d.precioKg !== undefined) $('f_precioKg').value = d.precioKg;
+        if(d.precioKg !== undefined) $('f_precioKgManual').value = d.precioKg;
         if(d.tipoImpresora) $('f_tipoImpresora').value = d.tipoImpresora;
         if(d.watts !== undefined) $('f_watts').value = d.watts;
         if(d.precioKwh !== undefined) $('f_precioKwh').value = d.precioKwh;
@@ -709,24 +896,29 @@ async function loadFromStorage(){
         if(d.margen !== undefined) $('f_margen').value = d.margen;
       }
     }else{
-      jobs = [];
+      jobs = []; materials = []; purchases = [];
     }
   }catch(e){
     console.error('Error leyendo datos', e);
     showToast('No se pudo conectar a la nube.');
-    jobs = [];
+    jobs = []; materials = []; purchases = [];
   }
   renderAll();
+  renderMaterialSelectOptions();
+  renderComprasAll();
+  refreshMaterialesDatalist();
+  if(!$('c_fecha').value) $('c_fecha').valueAsDate = new Date();
 }
 
 function clearForm(keepDefaults=true){
-  const keepMap = {precioKg:'f_precioKg', tipoImpresora:'f_tipoImpresora', watts:'f_watts', precioKwh:'f_precioKwh', mantenimiento:'f_mantenimiento', tarifaHora:'f_tarifaHora', fallas:'f_fallas', margen:'f_margen'};
+  const keepMap = {precioKg:'f_precioKgManual', tipoImpresora:'f_tipoImpresora', watts:'f_watts', precioKwh:'f_precioKwh', mantenimiento:'f_mantenimiento', tarifaHora:'f_tarifaHora', fallas:'f_fallas', margen:'f_margen'};
   const keep = {};
   if(keepDefaults){ Object.entries(keepMap).forEach(([k,id]) => keep[k] = $(id).value); }
   FIELD_IDS.forEach(id => $(id).value = '');
   $('f_tipoImpresora').value = '';
+  $('f_materialId').value = 'manual';
   if(keepDefaults){ Object.entries(keep).forEach(([k,v]) => { $(keepMap[k]).value = v; }); }
-  renderPreview();
+  updateMaterialSelectionUI();
 }
 
 $('f_tipoImpresora').addEventListener('change', () => {
@@ -746,9 +938,16 @@ $('btnGuardar').addEventListener('click', async () => {
   }
   const c = calcular(d);
   jobs.push({ id: 'job_' + Date.now() + '_' + Math.random().toString(36).slice(2,7), createdAt: Date.now(), data: d, calc: c });
-  await persistJobs();
+
+  if(d.materialId && d.materialId !== 'manual'){
+    const m = materials.find(x => x.id === d.materialId);
+    if(m) m.stockGramos -= d.gramos;
+  }
+
+  await persistState();
   await persistDefaults(d);
   renderAll();
+  renderMaterialSelectOptions();
   showToast('Trabajo guardado en la nube');
   clearForm(true);
   $('f_nombre').focus();
@@ -756,6 +955,196 @@ $('btnGuardar').addEventListener('click', async () => {
 
 $('btnLimpiar').addEventListener('click', () => clearForm(true));
 FIELD_IDS.forEach(id => $(id).addEventListener('input', renderPreview));
+
+/* ---------------- COMPRAS Y MATERIALES ---------------- */
+
+function updateCompraFormVisibility(){
+  const cat = $('c_categoria').value;
+  const isEquipo = cat === 'Equipo';
+  $('c_cantidadField').classList.toggle('hidden', isEquipo);
+  $('c_camposRow').classList.toggle('single', isEquipo);
+  $('c_nombreLabel').textContent = isEquipo ? 'Nombre del equipo / herramienta' : 'Nombre del material';
+  $('c_nombre').placeholder = isEquipo ? 'Ej: Impresora Ender 3 V2' : 'Ej: PLA Rojo 1.75mm';
+  refreshMaterialesDatalist();
+}
+$('c_categoria').addEventListener('change', updateCompraFormVisibility);
+
+function refreshMaterialesDatalist(){
+  const cat = $('c_categoria').value;
+  const dl = $('materialesDatalist');
+  const names = materials.filter(m => m.categoria === cat).map(m => m.nombre);
+  dl.innerHTML = names.map(n => `<option value="${escapeHtml(n)}"></option>`).join('');
+}
+
+function findOrCreateMaterial(nombre, categoria){
+  const key = nombre.trim().toLowerCase();
+  let m = materials.find(x => x.categoria === categoria && x.nombre.trim().toLowerCase() === key);
+  if(!m){
+    m = { id: 'mat_' + Date.now() + '_' + Math.random().toString(36).slice(2,7), nombre: nombre.trim(), categoria, stockGramos: 0, avgCostPerKg: 0 };
+    materials.push(m);
+  }
+  return m;
+}
+
+function registrarEntradaMaterial(m, cantidadG, precioTotal){
+  const valorAnterior = (m.stockGramos / 1000) * m.avgCostPerKg;
+  const valorNuevo = valorAnterior + precioTotal;
+  const stockNuevo = m.stockGramos + cantidadG;
+  m.stockGramos = stockNuevo;
+  m.avgCostPerKg = stockNuevo > 0 ? (valorNuevo / (stockNuevo / 1000)) : 0;
+}
+
+$('btnGuardarCompra').addEventListener('click', async () => {
+  const categoria = $('c_categoria').value;
+  const nombre = $('c_nombre').value.trim();
+  const cantidad = num($('c_cantidad').value);
+  const precioTotal = num($('c_precioTotal').value);
+  const proveedor = $('c_proveedor').value.trim();
+  const fecha = $('c_fecha').value ? new Date($('c_fecha').value + 'T12:00:00').getTime() : Date.now();
+  const notas = $('c_notas').value.trim();
+  const isConsumible = categoria !== 'Equipo';
+
+  if(!nombre){ showToast('Ponle un nombre al material o equipo'); $('c_nombre').focus(); return; }
+  if(precioTotal <= 0){ showToast('Ingresa el precio pagado'); $('c_precioTotal').focus(); return; }
+  if(isConsumible && cantidad <= 0){ showToast('Ingresa la cantidad comprada'); $('c_cantidad').focus(); return; }
+
+  purchases.push({
+    id: 'compra_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
+    categoria, nombre, cantidad: isConsumible ? cantidad : null,
+    precioTotal, proveedor, notas, fecha, createdAt: Date.now()
+  });
+
+  if(isConsumible){
+    const m = findOrCreateMaterial(nombre, categoria);
+    registrarEntradaMaterial(m, cantidad, precioTotal);
+  }
+
+  await persistState();
+  renderComprasAll();
+  renderMaterialSelectOptions();
+  refreshMaterialesDatalist();
+  showToast('Compra registrada');
+
+  $('c_nombre').value = ''; $('c_cantidad').value = ''; $('c_precioTotal').value = '';
+  $('c_proveedor').value = ''; $('c_notas').value = '';
+  $('c_fecha').valueAsDate = new Date();
+});
+
+window.deletePurchase = async function(id){
+  purchases = purchases.filter(p => p.id !== id);
+  await persistState();
+  renderComprasAll();
+  showToast('Compra eliminada del historial');
+};
+
+window.ajustarStock = async function(id){
+  const m = materials.find(x => x.id === id);
+  if(!m) return;
+  const nuevo = prompt('Nuevo stock para "' + m.nombre + '" (en gramos):', m.stockGramos.toFixed(0));
+  if(nuevo === null) return;
+  m.stockGramos = num(nuevo);
+  await persistState();
+  renderComprasAll();
+  renderMaterialSelectOptions();
+  showToast('Stock actualizado');
+};
+
+window.deleteMaterial = async function(id){
+  materials = materials.filter(x => x.id !== id);
+  await persistState();
+  renderComprasAll();
+  renderMaterialSelectOptions();
+  showToast('Material eliminado del inventario');
+};
+
+function renderMaterials(){
+  const c = $('materialsContainer');
+  if(materials.length === 0){
+    c.innerHTML = `
+      <div class="empty" style="margin-top:0;">
+        <div class="big">Sin materiales registrados</div>
+        Registra una compra de filamento, resina u otro insumo para empezar tu inventario.
+      </div>`;
+    return;
+  }
+  c.innerHTML = materials.map(m => {
+    const valor = (m.stockGramos / 1000) * m.avgCostPerKg;
+    const low = m.stockGramos < 200;
+    const pct = Math.max(0, Math.min(100, (m.stockGramos / 1000) * 10));
+    return `
+      <div class="mat-row">
+        <span class="cat-tag ${m.categoria}">${m.categoria}</span>
+        <span>
+          <span class="mat-name">${escapeHtml(m.nombre)}</span>
+          <div class="stock-bar"><span class="${low ? 'low' : ''}" style="width:${pct}%"></span></div>
+          <div class="mat-meta">${m.stockGramos.toFixed(0)} g en stock · ${money(m.avgCostPerKg)}/kg · valor: ${money(valor)}</div>
+        </span>
+        <span style="display:flex;gap:4px;">
+          <button class="icon-btn" title="Ajustar stock" onclick="ajustarStock('${m.id}')">✎</button>
+          <button class="icon-btn" title="Eliminar" onclick="deleteMaterial('${m.id}')">✕</button>
+        </span>
+      </div>`;
+  }).join('');
+}
+
+function renderPurchases(){
+  const c = $('purchasesContainer');
+  if(purchases.length === 0){
+    c.innerHTML = `
+      <div class="empty">
+        <div class="big">Todavía no hay compras registradas</div>
+        Registra tu primera compra de material o equipo arriba.
+      </div>`;
+    return;
+  }
+  const sorted = [...purchases].sort((a,b)=> b.fecha - a.fecha);
+  c.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>Fecha</th><th>Categoría</th><th>Descripción</th><th>Proveedor</th>
+          <th class="num">Cantidad</th><th class="num">Precio total</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+        ${sorted.map(p => `
+          <tr>
+            <td class="date">${new Date(p.fecha).toLocaleDateString('es-BO', {day:'2-digit', month:'short', year:'numeric'})}</td>
+            <td><span class="cat-tag ${p.categoria}">${p.categoria}</span></td>
+            <td class="name">${escapeHtml(p.nombre)}</td>
+            <td class="date">${escapeHtml(p.proveedor || '-')}</td>
+            <td class="num">${p.cantidad ? p.cantidad + ' g' : '-'}</td>
+            <td class="num">${money(p.precioTotal)}</td>
+            <td>
+              <div class="row-actions">
+                <button class="icon-btn" title="Eliminar" onclick="deletePurchase('${p.id}')">✕</button>
+              </div>
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>`;
+}
+
+function renderComprasStats(){
+  const totalInvertido = purchases.reduce((a,p)=> a + p.precioTotal, 0);
+  const now = new Date();
+  const mesActual = purchases.filter(p => {
+    const f = new Date(p.fecha);
+    return f.getMonth() === now.getMonth() && f.getFullYear() === now.getFullYear();
+  }).reduce((a,p)=> a + p.precioTotal, 0);
+  const valorStock = materials.reduce((a,m)=> a + (m.stockGramos / 1000) * m.avgCostPerKg, 0);
+  const equipos = purchases.filter(p => p.categoria === 'Equipo').reduce((a,p)=> a + p.precioTotal, 0);
+
+  $('statInvertido').textContent = money(totalInvertido);
+  $('statInvertidoMes').textContent = money(mesActual);
+  $('statValorStock').textContent = money(valorStock);
+  $('statEquipos').textContent = money(equipos);
+}
+
+function renderComprasAll(){ renderMaterials(); renderPurchases(); renderComprasStats(); }
+
+updateCompraFormVisibility();
 
 /* ---------------- PDF EXPORT ---------------- */
 
@@ -878,6 +1267,60 @@ $('btnReportePDF').addEventListener('click', () => {
   pdfFooter(doc);
   doc.save('3Dboys_reporte_trabajos.pdf');
   showToast('Reporte PDF generado');
+});
+
+$('btnReporteComprasPDF').addEventListener('click', () => {
+  if(purchases.length === 0){ showToast('Todavía no hay compras para exportar'); return; }
+  if(!window.jspdf){ showToast('La librería de PDF no cargó, revisa tu conexión'); return; }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  pdfHeader(doc, 'Reporte de compras y materiales');
+
+  const sorted = [...purchases].sort((a,b)=> b.fecha - a.fecha);
+  const rows = sorted.map(p => [
+    new Date(p.fecha).toLocaleDateString('es-BO'), p.categoria, p.nombre, p.proveedor || '-',
+    p.cantidad ? p.cantidad + ' g' : '-', money(p.precioTotal)
+  ]);
+
+  doc.autoTable({
+    startY: 38,
+    head: [['Fecha', 'Categoría', 'Descripción', 'Proveedor', 'Cantidad', 'Precio total']],
+    body: rows,
+    styles: { fontSize: 8, cellPadding: 3 },
+    headStyles: { fillColor: [36, 34, 32] },
+    columnStyles: { 5: { halign: 'right' } }
+  });
+
+  let finalY = doc.lastAutoTable.finalY + 10;
+  const totalInvertido = purchases.reduce((a,p)=> a + p.precioTotal, 0);
+
+  doc.setFontSize(10); doc.setTextColor(30); doc.setFont(undefined, 'bold');
+  doc.text('Resumen general', 14, finalY);
+  doc.setFont(undefined, 'normal');
+  doc.text('Compras registradas: ' + purchases.length, 14, finalY + 6);
+  doc.text('Total invertido: ' + money(totalInvertido), 14, finalY + 12);
+
+  if(materials.length){
+    finalY += 24;
+    doc.setFont(undefined, 'bold');
+    doc.text('Inventario actual', 14, finalY);
+    doc.setFont(undefined, 'normal');
+    const matRows = materials.map(m => [
+      m.nombre, m.categoria, m.stockGramos.toFixed(0) + ' g',
+      money(m.avgCostPerKg) + '/kg', money((m.stockGramos / 1000) * m.avgCostPerKg)
+    ]);
+    doc.autoTable({
+      startY: finalY + 4,
+      head: [['Material', 'Categoría', 'Stock', 'Costo prom.', 'Valor']],
+      body: matRows,
+      styles: { fontSize: 8, cellPadding: 3 },
+      headStyles: { fillColor: [36, 34, 32] },
+    });
+  }
+
+  pdfFooter(doc);
+  doc.save('3Dboys_reporte_compras.pdf');
+  showToast('Reporte de compras PDF generado');
 });
 </script>
 </body>
