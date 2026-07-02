@@ -755,7 +755,7 @@ let jobs = [];
 let materials = [];
 let purchases = [];
 let sales = [];
-let products = []; // productos impresos para stock y ventas
+let products = [];
 
 function num(v){ const n = parseFloat(v); return isNaN(n) ? 0 : n; }
 function money(v){ return 'Bs ' + v.toLocaleString('es-BO', {minimumFractionDigits:2, maximumFractionDigits:2}); }
@@ -1103,10 +1103,10 @@ $('btnGuardar').addEventListener('click', async () => {
   const jobId = 'job_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
   jobs.push({ id: jobId, createdAt: Date.now(), data: d, calc: c });
 
-  // Crear producto asociado para ventas (stock inicial 0, se puede vender después de imprimir)
+  // Crear producto asociado para ventas
   const precioSugerido = c.precioVenta;
-  // Buscar si ya existe producto con mismo nombre
-  let existingProd = products.find(p => p.nombre === d.nombre && p.jobId === jobId);
+  // Buscar si ya existe producto con mismo nombre y mismo jobId
+  let existingProd = products.find(p => p.jobId === jobId);
   if(!existingProd){
     products.push({
       id: 'prod_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
@@ -1148,8 +1148,8 @@ function populateProductSelect(){
     products.map(p => `<option value="${p.id}">${escapeHtml(p.nombre)} (stock: ${p.stock})</option>`).join('');
   if(products.some(p => p.id === current)) sel.value = current;
   // Autocompletar precio sugerido
-  $('v_productoId').addEventListener('change', () => {
-    const prod = products.find(p => p.id === $('v_productoId').value);
+  sel.addEventListener('change', function() {
+    const prod = products.find(p => p.id === this.value);
     if(prod && prod.precioSugerido){
       $('v_precioUnitario').value = prod.precioSugerido;
     }
@@ -1176,7 +1176,7 @@ function renderProductosStock(){
   const container = $('productosStockContainer');
   const prodConStock = products.filter(p => p.stock > 0);
   if(prodConStock.length === 0){
-    container.innerHTML = `<div class="empty" style="padding:16px;font-size:11px;">No hay productos con stock disponible.</div>`;
+    container.innerHTML = `<div class="empty" style="padding:16px;font-size:11px;">No hay productos con stock disponible.<br>Primero guarda un trabajo para crear un producto.</div>`;
     return;
   }
   container.innerHTML = prodConStock.map(p => `
@@ -1200,6 +1200,7 @@ window.ajustarStockProducto = async function(id){
   p.stock = num(nuevo);
   await persistState();
   renderVentasAll();
+  populateProductSelect();
   showToast('Stock actualizado');
 };
 
@@ -1247,7 +1248,6 @@ function renderVentas(){
 window.deleteSale = async function(id){
   const sale = sales.find(s => s.id === id);
   if(sale){
-    // Devolver stock
     const prod = products.find(p => p.id === sale.productoId);
     if(prod){
       prod.stock += sale.cantidad;
@@ -1257,6 +1257,7 @@ window.deleteSale = async function(id){
   sales = sales.filter(s => s.id !== id);
   await persistState();
   renderVentasAll();
+  populateProductSelect();
   showToast('Venta eliminada y stock restaurado');
 };
 
@@ -1279,7 +1280,6 @@ $('btnRegistrarVenta').addEventListener('click', async () => {
     return;
   }
 
-  // Registrar venta
   sales.push({
     id: 'sale_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
     productoId: productoId,
@@ -1292,7 +1292,6 @@ $('btnRegistrarVenta').addEventListener('click', async () => {
     createdAt: Date.now()
   });
 
-  // Actualizar stock del producto
   prod.stock -= cantidad;
   prod.vendidos = (prod.vendidos || 0) + cantidad;
 
@@ -1678,7 +1677,7 @@ function buildProformaPdf(d, c, createdAt){
   pdfFooter(doc);
   doc.save('3Dboys_proforma_' + (d.nombre || 'trabajo').replace(/\s+/g, '_') + '.pdf');
   showToast('Proforma PDF generada');
-}
+});
 
 $('btnReportePDF').addEventListener('click', () => {
   if(jobs.length === 0){ showToast('Todavía no hay trabajos para exportar'); return; }
