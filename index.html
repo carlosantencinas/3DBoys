@@ -359,7 +359,7 @@
         <select id="f_materialId">
           <option value="manual">Otro / material no registrado (ingreso manual)</option>
         </select>
-        <div class="hint">Los materiales aparecen aquí cuando los registras en "Compras y Materiales".</div>
+        <div class="hint">Solo aparecen materiales medidos en gramos/kilogramos (filamento, resina por peso), ya que el costo de impresión se calcula por gramo usado.</div>
       </div>
       <div class="field-row">
         <div class="field"><label>Cantidad usada (g)</label><input type="number" id="f_gramos" min="0" step="0.1" placeholder="120"></div>
@@ -478,9 +478,23 @@
           <datalist id="materialesDatalist"></datalist>
         </div>
 
-        <div class="field-row" id="c_camposRow">
-          <div class="field" id="c_cantidadField"><label>Cantidad comprada (g)</label><input type="number" id="c_cantidad" min="0" step="1" placeholder="1000"></div>
+        <div class="field-row">
+          <div class="field"><label>Cantidad comprada</label><input type="number" id="c_cantidad" min="0" step="0.01" placeholder="1000"></div>
+          <div class="field">
+            <label>Unidad</label>
+            <select id="c_unidad">
+              <option value="g">Gramos (g)</option>
+              <option value="kg">Kilogramos (kg)</option>
+              <option value="ml">Mililitros (ml)</option>
+              <option value="l">Litros (L)</option>
+              <option value="unidad">Unidad(es) / pieza(s)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field-row">
           <div class="field"><label>Precio total pagado (Bs)</label><input type="number" id="c_precioTotal" min="0" step="0.1" placeholder="95"></div>
+          <div class="field"><label>Comprado por</label><input type="text" id="c_compradoPor" placeholder="Nombre de quién hizo la compra"></div>
         </div>
 
         <div class="field-row">
@@ -626,6 +640,25 @@ let purchases = [];
 function num(v){ const n = parseFloat(v); return isNaN(n) ? 0 : n; }
 function money(v){ return 'Bs ' + v.toLocaleString('es-BO', {minimumFractionDigits:2, maximumFractionDigits:2}); }
 
+/* Unidades de compra: cada una se normaliza a una unidad base para poder sumar stock */
+const UNIT_INFO = {
+  g:      { base: 'g',  factor: 1,    label: 'g' },
+  kg:     { base: 'g',  factor: 1000, label: 'kg' },
+  ml:     { base: 'ml', factor: 1,    label: 'ml' },
+  l:      { base: 'ml', factor: 1000, label: 'L' },
+  unidad: { base: 'u',  factor: 1,    label: 'unidad(es)' }
+};
+function formatStock(m){
+  if(m.unidad === 'g') return m.stock.toFixed(0) + ' g';
+  if(m.unidad === 'ml') return m.stock.toFixed(0) + ' ml';
+  return m.stock.toFixed(0) + ' u';
+}
+function formatCosto(m){
+  if(m.unidad === 'g') return money(m.costoPromedio * 1000) + '/kg';
+  if(m.unidad === 'ml') return money(m.costoPromedio * 1000) + '/L';
+  return money(m.costoPromedio) + '/u';
+}
+
 function showToast(msg){
   const t = $('toast');
   t.textContent = msg;
@@ -643,7 +676,7 @@ function readForm(){
     materialNombre = '';
   }else{
     const m = materials.find(x => x.id === materialId);
-    precioKg = m ? m.avgCostPerKg : 0;
+    precioKg = m ? m.costoPromedio * 1000 : 0;
     materialNombre = m ? m.nombre : '';
   }
   return {
@@ -687,8 +720,8 @@ function renderMaterialSelectOptions(){
   const sel = $('f_materialId');
   const current = sel.value;
   sel.innerHTML = '<option value="manual">Otro / material no registrado (ingreso manual)</option>' +
-    materials.filter(m => m.categoria !== 'Equipo').map(m =>
-      `<option value="${m.id}">${escapeHtml(m.nombre)} — stock: ${m.stockGramos.toFixed(0)}g — ${money(m.avgCostPerKg)}/kg</option>`
+    materials.filter(m => m.categoria !== 'Equipo' && m.unidad === 'g').map(m =>
+      `<option value="${m.id}">${escapeHtml(m.nombre)} — stock: ${formatStock(m)} — ${formatCosto(m)}</option>`
     ).join('');
   if(materials.some(m => m.id === current)) sel.value = current;
   updateMaterialSelectionUI();
@@ -707,10 +740,10 @@ function updateMaterialSelectionUI(){
     const m = materials.find(x => x.id === val);
     if(m){
       const gramos = num($('f_gramos').value);
-      const suficiente = gramos <= m.stockGramos;
+      const suficiente = gramos <= m.stock;
       info.classList.remove('hidden');
       info.classList.toggle('warn', !suficiente);
-      info.innerHTML = 'Precio usado: <b>' + money(m.avgCostPerKg) + '/kg</b> · Stock disponible: <b>' + m.stockGramos.toFixed(0) + ' g</b>' +
+      info.innerHTML = 'Precio usado: <b>' + formatCosto(m) + '</b> · Stock disponible: <b>' + formatStock(m) + '</b>' +
         (suficiente ? '' : ' · ⚠ No alcanza el stock, quedará en negativo');
     }
   }
@@ -941,7 +974,7 @@ $('btnGuardar').addEventListener('click', async () => {
 
   if(d.materialId && d.materialId !== 'manual'){
     const m = materials.find(x => x.id === d.materialId);
-    if(m) m.stockGramos -= d.gramos;
+    if(m) m.stock -= d.gramos;
   }
 
   await persistState();
@@ -961,10 +994,10 @@ FIELD_IDS.forEach(id => $(id).addEventListener('input', renderPreview));
 function updateCompraFormVisibility(){
   const cat = $('c_categoria').value;
   const isEquipo = cat === 'Equipo';
-  $('c_cantidadField').classList.toggle('hidden', isEquipo);
-  $('c_camposRow').classList.toggle('single', isEquipo);
   $('c_nombreLabel').textContent = isEquipo ? 'Nombre del equipo / herramienta' : 'Nombre del material';
   $('c_nombre').placeholder = isEquipo ? 'Ej: Impresora Ender 3 V2' : 'Ej: PLA Rojo 1.75mm';
+  const defaultUnit = { Filamento: 'g', Resina: 'ml', Insumo: 'unidad', Equipo: 'unidad' }[cat] || 'unidad';
+  $('c_unidad').value = defaultUnit;
   refreshMaterialesDatalist();
 }
 $('c_categoria').addEventListener('change', updateCompraFormVisibility);
@@ -976,29 +1009,31 @@ function refreshMaterialesDatalist(){
   dl.innerHTML = names.map(n => `<option value="${escapeHtml(n)}"></option>`).join('');
 }
 
-function findOrCreateMaterial(nombre, categoria){
+function findOrCreateMaterial(nombre, categoria, unidadBase){
   const key = nombre.trim().toLowerCase();
-  let m = materials.find(x => x.categoria === categoria && x.nombre.trim().toLowerCase() === key);
+  let m = materials.find(x => x.categoria === categoria && x.unidad === unidadBase && x.nombre.trim().toLowerCase() === key);
   if(!m){
-    m = { id: 'mat_' + Date.now() + '_' + Math.random().toString(36).slice(2,7), nombre: nombre.trim(), categoria, stockGramos: 0, avgCostPerKg: 0 };
+    m = { id: 'mat_' + Date.now() + '_' + Math.random().toString(36).slice(2,7), nombre: nombre.trim(), categoria, unidad: unidadBase, stock: 0, costoPromedio: 0 };
     materials.push(m);
   }
   return m;
 }
 
-function registrarEntradaMaterial(m, cantidadG, precioTotal){
-  const valorAnterior = (m.stockGramos / 1000) * m.avgCostPerKg;
+function registrarEntradaMaterial(m, cantidadBase, precioTotal){
+  const valorAnterior = m.stock * m.costoPromedio;
   const valorNuevo = valorAnterior + precioTotal;
-  const stockNuevo = m.stockGramos + cantidadG;
-  m.stockGramos = stockNuevo;
-  m.avgCostPerKg = stockNuevo > 0 ? (valorNuevo / (stockNuevo / 1000)) : 0;
+  const stockNuevo = m.stock + cantidadBase;
+  m.stock = stockNuevo;
+  m.costoPromedio = stockNuevo > 0 ? (valorNuevo / stockNuevo) : 0;
 }
 
 $('btnGuardarCompra').addEventListener('click', async () => {
   const categoria = $('c_categoria').value;
   const nombre = $('c_nombre').value.trim();
   const cantidad = num($('c_cantidad').value);
+  const unidad = $('c_unidad').value;
   const precioTotal = num($('c_precioTotal').value);
+  const compradoPor = $('c_compradoPor').value.trim();
   const proveedor = $('c_proveedor').value.trim();
   const fecha = $('c_fecha').value ? new Date($('c_fecha').value + 'T12:00:00').getTime() : Date.now();
   const notas = $('c_notas').value.trim();
@@ -1006,17 +1041,18 @@ $('btnGuardarCompra').addEventListener('click', async () => {
 
   if(!nombre){ showToast('Ponle un nombre al material o equipo'); $('c_nombre').focus(); return; }
   if(precioTotal <= 0){ showToast('Ingresa el precio pagado'); $('c_precioTotal').focus(); return; }
-  if(isConsumible && cantidad <= 0){ showToast('Ingresa la cantidad comprada'); $('c_cantidad').focus(); return; }
+  if(cantidad <= 0){ showToast('Ingresa la cantidad comprada'); $('c_cantidad').focus(); return; }
 
   purchases.push({
     id: 'compra_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
-    categoria, nombre, cantidad: isConsumible ? cantidad : null,
-    precioTotal, proveedor, notas, fecha, createdAt: Date.now()
+    categoria, nombre, cantidad, unidad,
+    precioTotal, proveedor, compradoPor, notas, fecha, createdAt: Date.now()
   });
 
   if(isConsumible){
-    const m = findOrCreateMaterial(nombre, categoria);
-    registrarEntradaMaterial(m, cantidad, precioTotal);
+    const unitInfo = UNIT_INFO[unidad];
+    const m = findOrCreateMaterial(nombre, categoria, unitInfo.base);
+    registrarEntradaMaterial(m, cantidad * unitInfo.factor, precioTotal);
   }
 
   await persistState();
@@ -1026,7 +1062,7 @@ $('btnGuardarCompra').addEventListener('click', async () => {
   showToast('Compra registrada');
 
   $('c_nombre').value = ''; $('c_cantidad').value = ''; $('c_precioTotal').value = '';
-  $('c_proveedor').value = ''; $('c_notas').value = '';
+  $('c_compradoPor').value = ''; $('c_proveedor').value = ''; $('c_notas').value = '';
   $('c_fecha').valueAsDate = new Date();
 });
 
@@ -1040,9 +1076,10 @@ window.deletePurchase = async function(id){
 window.ajustarStock = async function(id){
   const m = materials.find(x => x.id === id);
   if(!m) return;
-  const nuevo = prompt('Nuevo stock para "' + m.nombre + '" (en gramos):', m.stockGramos.toFixed(0));
+  const unitLabel = m.unidad === 'g' ? 'gramos' : (m.unidad === 'ml' ? 'mililitros' : 'unidades');
+  const nuevo = prompt('Nuevo stock para "' + m.nombre + '" (en ' + unitLabel + '):', m.stock.toFixed(0));
   if(nuevo === null) return;
-  m.stockGramos = num(nuevo);
+  m.stock = num(nuevo);
   await persistState();
   renderComprasAll();
   renderMaterialSelectOptions();
@@ -1068,16 +1105,18 @@ function renderMaterials(){
     return;
   }
   c.innerHTML = materials.map(m => {
-    const valor = (m.stockGramos / 1000) * m.avgCostPerKg;
-    const low = m.stockGramos < 200;
-    const pct = Math.max(0, Math.min(100, (m.stockGramos / 1000) * 10));
+    const valor = m.stock * m.costoPromedio;
+    const lowThreshold = m.unidad === 'g' ? 200 : (m.unidad === 'ml' ? 200 : 2);
+    const low = m.stock < lowThreshold;
+    const maxRef = m.unidad === 'u' ? 20 : 1000;
+    const pct = Math.max(0, Math.min(100, (m.stock / maxRef) * 100));
     return `
       <div class="mat-row">
         <span class="cat-tag ${m.categoria}">${m.categoria}</span>
         <span>
           <span class="mat-name">${escapeHtml(m.nombre)}</span>
           <div class="stock-bar"><span class="${low ? 'low' : ''}" style="width:${pct}%"></span></div>
-          <div class="mat-meta">${m.stockGramos.toFixed(0)} g en stock · ${money(m.avgCostPerKg)}/kg · valor: ${money(valor)}</div>
+          <div class="mat-meta">${formatStock(m)} en stock · ${formatCosto(m)} · valor: ${money(valor)}</div>
         </span>
         <span style="display:flex;gap:4px;">
           <button class="icon-btn" title="Ajustar stock" onclick="ajustarStock('${m.id}')">✎</button>
@@ -1102,7 +1141,7 @@ function renderPurchases(){
     <table>
       <thead>
         <tr>
-          <th>Fecha</th><th>Categoría</th><th>Descripción</th><th>Proveedor</th>
+          <th>Fecha</th><th>Categoría</th><th>Descripción</th><th>Comprado por</th><th>Proveedor</th>
           <th class="num">Cantidad</th><th class="num">Precio total</th><th></th>
         </tr>
       </thead>
@@ -1112,8 +1151,9 @@ function renderPurchases(){
             <td class="date">${new Date(p.fecha).toLocaleDateString('es-BO', {day:'2-digit', month:'short', year:'numeric'})}</td>
             <td><span class="cat-tag ${p.categoria}">${p.categoria}</span></td>
             <td class="name">${escapeHtml(p.nombre)}</td>
+            <td class="date">${escapeHtml(p.compradoPor || '-')}</td>
             <td class="date">${escapeHtml(p.proveedor || '-')}</td>
-            <td class="num">${p.cantidad ? p.cantidad + ' g' : '-'}</td>
+            <td class="num">${p.cantidad ? p.cantidad + ' ' + (UNIT_INFO[p.unidad] ? UNIT_INFO[p.unidad].label : '') : '-'}</td>
             <td class="num">${money(p.precioTotal)}</td>
             <td>
               <div class="row-actions">
