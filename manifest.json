@@ -1,0 +1,17 @@
+{
+  "name": "3Dboys — Taller de impresión 3D",
+  "short_name": "3Dboys",
+  "description": "Registro de trabajos, ventas, compras y consignaciones de impresión 3D",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1c1b1a",
+  "theme_color": "#ff6b35",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
