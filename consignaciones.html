@@ -1,0 +1,631 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>3Dboys — Consignaciones</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+<style>
+  :root{
+    --bg: #1c1b1a; --surface: #242220; --surface-2: #2c2925; --border: #3a3630;
+    --text: #f2ede2; --muted: #a89f8f; --accent: #ff6b35; --accent-dim: #ff6b3522;
+    --good: #4ecdc4; --bad: #e8595a; --warn: #e8b83f;
+    --font-display: 'Space Grotesk', sans-serif; --font-body: 'Inter', sans-serif; --font-mono: 'JetBrains Mono', monospace;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font-body);line-height:1.5;}
+  .wrap{max-width:1180px;margin:0 auto;padding:36px 24px 80px;}
+
+  #authOverlay{position:fixed;inset:0;background:var(--bg);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px;}
+  .auth-card{width:100%;max-width:380px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:30px;}
+  .auth-card .brand{display:flex;align-items:center;gap:10px;margin-bottom:22px;justify-content:center;}
+  .auth-card h1{font-family:var(--font-display);font-size:22px;margin:0;}
+  .auth-card p.tag{text-align:center;color:var(--muted);font-size:13px;margin:-14px 0 22px;}
+  .auth-card label{display:block;font-size:12.5px;color:var(--muted);margin-bottom:5px;}
+  .auth-card input{width:100%;background:var(--surface-2);border:1px solid var(--border);color:var(--text);font-family:var(--font-mono);font-size:14px;padding:10px;border-radius:6px;outline:none;margin-bottom:14px;}
+  .auth-card input:focus{border-color:var(--accent);}
+  .auth-error{color:var(--bad);font-size:12.5px;margin:-6px 0 14px;min-height:16px;}
+  #appRoot{display:none;}
+
+  header.top{display:flex;justify-content:space-between;align-items:flex-end;gap:20px;margin-bottom:24px;border-bottom:1px solid var(--border);padding-bottom:20px;flex-wrap:wrap;}
+  .brand{display:flex;align-items:center;gap:12px;}
+  .brand h1{font-family:var(--font-display);font-size:24px;font-weight:700;margin:0;letter-spacing:-0.01em;}
+  .brand p{margin:2px 0 0;color:var(--muted);font-size:13px;}
+  .nav-links{display:flex;gap:8px;flex-wrap:wrap;}
+  .nav-links a{font-family:var(--font-display);font-weight:600;font-size:12.5px;color:var(--muted);text-decoration:none;border:1px solid var(--border);border-radius:8px;padding:8px 14px;transition:all .15s;}
+  .nav-links a:hover{color:var(--text);border-color:var(--muted);}
+  .nav-links a.current{background:var(--accent);color:#1c1b1a;border-color:var(--accent);}
+
+  .cloud-note{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted);background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:6px 8px 6px 12px;margin-bottom:24px;flex-wrap:wrap;}
+  .cloud-note .left{display:flex;align-items:center;gap:8px;}
+  .cloud-note .dot{width:6px;height:6px;border-radius:50%;background:var(--good);flex-shrink:0;}
+  .cloud-note button{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:14px;padding:4px 12px;font-size:11.5px;cursor:pointer;}
+  .cloud-note button:hover{color:var(--bad);border-color:var(--bad);}
+
+  .stats{display:flex;gap:22px;flex-wrap:wrap;align-items:flex-end;margin-bottom:24px;}
+  .stat{text-align:left;}
+  .stat .num{font-family:var(--font-mono);font-size:20px;font-weight:700;color:var(--accent);}
+  .stat .lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
+
+  .grid{display:grid;grid-template-columns:1.1fr 0.9fr;gap:24px;align-items:start;}
+  @media (max-width:860px){ .grid{grid-template-columns:1fr;} }
+
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:22px;}
+  .card h2{font-family:var(--font-display);font-size:15px;margin:0 0 16px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);display:flex;align-items:center;gap:8px;}
+  .card h2 .accent-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);}
+  .card-head-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;}
+
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;}
+  .field{margin-bottom:12px;}
+  .field label{display:block;font-size:12.5px;color:var(--muted);margin-bottom:5px;}
+  .field input, .field select, .field textarea{width:100%;background:var(--surface-2);border:1px solid var(--border);color:var(--text);font-family:var(--font-mono);font-size:14px;padding:9px 10px;border-radius:6px;outline:none;transition:border-color .15s;}
+  .field select{font-family:var(--font-body);}
+  .field textarea{font-family:var(--font-body);resize:vertical;min-height:56px;}
+  .field input:focus, .field select:focus, .field textarea:focus{border-color:var(--accent);}
+  .field.full{grid-column:1/-1;}
+  .field .hint{font-size:11px;color:#726b5c;margin-top:4px;}
+
+  .section-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin:18px 0 8px;border-top:1px dashed var(--border);padding-top:14px;}
+  .section-label:first-of-type{border-top:none;margin-top:0;padding-top:0;}
+
+  .btn{font-family:var(--font-display);font-weight:600;font-size:14px;background:var(--accent);color:#1c1b1a;border:none;border-radius:7px;padding:12px 18px;cursor:pointer;width:100%;margin-top:6px;transition:filter .15s, transform .1s;}
+  .btn:hover{filter:brightness(1.08);}
+  .btn.secondary{background:transparent;color:var(--muted);border:1px solid var(--border);font-family:var(--font-body);font-weight:500;}
+  .btn.secondary:hover{color:var(--text);border-color:var(--muted);}
+  .btn.small{width:auto;padding:8px 14px;font-size:12.5px;margin-top:0;}
+  .btn.outline{background:transparent;border:1px solid var(--accent);color:var(--accent);}
+  .btn.outline:hover{background:var(--accent-dim);}
+
+  .material-info{font-size:12px;color:var(--muted);background:var(--surface-2);border:1px solid var(--border);border-radius:6px;padding:8px 10px;margin:-4px 0 12px;}
+  .material-info.warn{color:var(--bad);border-color:var(--bad);}
+  .material-info b{color:var(--text);font-family:var(--font-mono);}
+
+  table{width:100%;border-collapse:collapse;font-size:13.5px;}
+  thead th{text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);padding:0 10px 10px;font-weight:500;border-bottom:1px solid var(--border);}
+  tbody td{padding:12px 10px;border-bottom:1px solid var(--border);vertical-align:middle;}
+  tbody tr:hover{background:var(--surface-2);}
+  td.num, th.num{font-family:var(--font-mono);text-align:right;}
+  td.name{font-weight:500;}
+  td.name .sub{display:block;font-size:11px;color:var(--muted);font-weight:400;margin-top:2px;}
+  td.date{color:var(--muted);font-size:12.5px;}
+  .row-actions{display:flex;gap:6px;}
+  .icon-btn{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:6px;width:28px;height:28px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;}
+  .icon-btn:hover{border-color:var(--bad);color:var(--bad);}
+  .icon-btn.pdf:hover{border-color:var(--accent);color:var(--accent);}
+  .icon-btn.pay:hover{border-color:var(--good);color:var(--good);}
+
+  .estado-tag{font-family:var(--font-mono);font-size:11px;padding:2px 8px;border-radius:20px;display:inline-block;white-space:nowrap;}
+  .estado-tag.Pendiente{background:#e8b83f22;color:var(--warn);}
+  .estado-tag.Parcial{background:#6fa8dc22;color:#6fa8dc;}
+  .estado-tag.Pagado{background:#4ecdc422;color:var(--good);}
+  .estado-tag.Devuelto{background:#e8595a22;color:var(--bad);}
+
+  .empty{text-align:center;padding:50px 20px;color:var(--muted);font-size:14px;border:1px dashed var(--border);border-radius:10px;margin-top:20px;}
+  .empty .big{font-family:var(--font-display);font-size:16px;color:var(--text);margin-bottom:6px;}
+
+  .toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--surface-2);border:1px solid var(--accent);color:var(--text);padding:10px 18px;border-radius:8px;font-size:13.5px;opacity:0;transition:opacity .25s, transform .25s;pointer-events:none;z-index:50;}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+  .table-wrap{margin-top:28px;}
+  #consignacionesContainer{overflow-x:auto;-webkit-overflow-scrolling:touch;}
+  #consignacionesContainer table{min-width:760px;}
+  .hidden{display:none !important;}
+
+  @media (max-width:640px){
+    .wrap{padding:20px 14px 70px;}
+    header.top{flex-direction:column;align-items:flex-start;gap:14px;}
+    .field-row{grid-template-columns:1fr;}
+    .field input, .field select, .field textarea{font-size:16px;}
+    .card{padding:16px;}
+    table{font-size:12px;}
+  }
+</style>
+</head>
+<body>
+
+<div id="authOverlay">
+  <div class="auth-card">
+    <div class="brand">
+      <svg width="30" height="30" viewBox="0 0 34 34" fill="none">
+        <rect x="3" y="22" width="28" height="6" rx="1.5" fill="#3a3630"/>
+        <rect x="6" y="17" width="22" height="5" rx="1" fill="#4a453c"/>
+        <rect x="9" y="12.5" width="16" height="4.5" rx="1" fill="#5c574c"/>
+        <rect x="12" y="8.5" width="10" height="4" rx="1" fill="#ff6b35"/>
+        <rect x="15.3" y="3" width="3.4" height="6" rx="1" fill="#ff6b35"/>
+      </svg>
+      <h1>3Dboys</h1>
+    </div>
+    <p class="tag">Ingresa a tu taller</p>
+    <label>Correo</label>
+    <input type="email" id="authEmail" placeholder="tucorreo@ejemplo.com" autocomplete="email">
+    <label>Contraseña</label>
+    <input type="password" id="authPassword" placeholder="••••••••" autocomplete="current-password">
+    <div class="auth-error" id="authError"></div>
+    <button class="btn" id="btnAuthSubmit">Iniciar sesión</button>
+  </div>
+</div>
+
+<div id="appRoot">
+<div class="wrap">
+
+  <header class="top">
+    <div class="brand">
+      <svg width="36" height="36" viewBox="0 0 34 34" fill="none">
+        <rect x="3" y="22" width="28" height="6" rx="1.5" fill="#3a3630"/>
+        <rect x="6" y="17" width="22" height="5" rx="1" fill="#4a453c"/>
+        <rect x="9" y="12.5" width="16" height="4.5" rx="1" fill="#5c574c"/>
+        <rect x="12" y="8.5" width="10" height="4" rx="1" fill="#ff6b35"/>
+        <rect x="15.3" y="3" width="3.4" height="6" rx="1" fill="#ff6b35"/>
+      </svg>
+      <div>
+        <h1>3Dboys</h1>
+        <p>Consignaciones en tiendas</p>
+      </div>
+    </div>
+    <div class="nav-links">
+      <a href="index.html">← Panel principal</a>
+      <a href="productos.html">Productos</a>
+      <a href="consignaciones.html" class="current">Consignaciones</a>
+    </div>
+  </header>
+
+  <div class="cloud-note">
+    <div class="left"><span class="dot"></span> <span id="cloudNoteText">Conectado — comparte los datos con tu panel principal.</span></div>
+    <button id="btnLogout">Cerrar sesión</button>
+  </div>
+
+  <div class="stats" id="statsBar">
+    <div class="stat"><div class="num" id="statEntregado">0</div><div class="lbl">Piezas entregadas</div></div>
+    <div class="stat"><div class="num" id="statValorTotal">Bs 0</div><div class="lbl">Valor en consignación</div></div>
+    <div class="stat"><div class="num" id="statPendienteCobro">Bs 0</div><div class="lbl">Pendiente de cobro</div></div>
+    <div class="stat"><div class="num" id="statCobrado">Bs 0</div><div class="lbl">Ya cobrado</div></div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2><span class="accent-dot"></span> Registrar entrega a tienda</h2>
+
+      <div class="field-row">
+        <div class="field"><label>Tienda</label><input type="text" id="c_tienda" placeholder="Ej: Regalos El Sol"></div>
+        <div class="field"><label>Contacto</label><input type="text" id="c_contacto" placeholder="Nombre / teléfono"></div>
+      </div>
+
+      <div class="section-label">Producto entregado</div>
+      <div class="field full">
+        <label>Producto (con código)</label>
+        <select id="c_producto">
+          <option value="">Producto libre / sin código registrado</option>
+        </select>
+        <div class="hint">Los productos con código se gestionan en la pestaña "Productos" y muestran cuánto tienes disponible en taller.</div>
+      </div>
+      <div class="material-info hidden" id="c_stockInfo"></div>
+      <div class="field full" id="c_libreField">
+        <label>Descripción del producto (si no tiene código)</label>
+        <input type="text" id="c_descripcionLibre" placeholder="Ej: Llavero genérico surtido">
+      </div>
+
+      <div class="field-row">
+        <div class="field"><label>Cantidad entregada</label><input type="number" id="c_cantidad" min="1" step="1" placeholder="10"></div>
+        <div class="field"><label>Precio pactado por unidad (Bs)</label><input type="number" id="c_precioUnitario" min="0" step="0.1" placeholder="15"></div>
+      </div>
+
+      <div class="field-row">
+        <div class="field"><label>Fecha de entrega</label><input type="date" id="c_fecha"></div>
+        <div class="field">
+          <label>Estado de pago</label>
+          <select id="c_estadoPago">
+            <option value="Pendiente" selected>Pendiente — se paga al venderse</option>
+            <option value="Parcial">Pagado parcialmente</option>
+            <option value="Pagado">Pagado por completo</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field full">
+        <label>Notas</label>
+        <textarea id="c_notas" placeholder="Condiciones acordadas, plazo, etc."></textarea>
+      </div>
+
+      <button class="btn" id="btnGuardarConsignacion">Registrar entrega</button>
+    </div>
+
+    <div class="card">
+      <h2><span class="accent-dot"></span> Resumen por tienda</h2>
+      <div id="tiendasResumenContainer"></div>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <div class="card" style="padding:0; overflow:hidden;">
+      <div style="padding:20px 22px 6px;">
+        <div class="card-head-row">
+          <h2 style="margin-bottom:0;"><span class="accent-dot"></span> Historial de consignaciones</h2>
+          <button class="btn small outline" id="btnReporteConsignacionesPDF">Exportar reporte PDF</button>
+        </div>
+      </div>
+      <div id="consignacionesContainer" style="padding:0 22px 22px;"></div>
+    </div>
+  </div>
+
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const firebaseConfig = {
+  apiKey: "AIzaSyBwmXJPKuNRiJg8XDaLXnQa7rv6XZj3Etw",
+  authDomain: "dboys-5a403.firebaseapp.com",
+  projectId: "dboys-5a403",
+  storageBucket: "dboys-5a403.firebasestorage.app",
+  messagingSenderId: "362483512162",
+  appId: "1:362483512162:web:f5a971440f5972cd8d723b",
+  measurementId: "G-9ZH28SQVGN"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+const COLLECTION = 'talleres3dboys';
+const SHARED_DOC_ID = 'principal';
+
+function $(id){ return document.getElementById(id); }
+function num(v){ const n = parseFloat(v); return isNaN(n) ? 0 : n; }
+function money(v){ return 'Bs ' + v.toLocaleString('es-BO', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+function escapeHtml(str){ const d = document.createElement('div'); d.textContent = str || ''; return d.innerHTML; }
+function showToast(msg){ const t = $('toast'); t.textContent = msg; t.classList.add('show'); setTimeout(()=> t.classList.remove('show'), 2200); }
+
+$('btnAuthSubmit').addEventListener('click', async () => {
+  const email = $('authEmail').value.trim();
+  const password = $('authPassword').value;
+  $('authError').textContent = '';
+  if(!email || !password){ $('authError').textContent = 'Completa correo y contraseña.'; return; }
+  try{ await auth.signInWithEmailAndPassword(email, password); }
+  catch(e){
+    const map = {'auth/invalid-email':'Correo inválido.','auth/user-not-found':'No existe una cuenta con ese correo.','auth/wrong-password':'Contraseña incorrecta.','auth/invalid-credential':'Correo o contraseña incorrectos.'};
+    $('authError').textContent = map[e.code] || e.message;
+  }
+});
+['authEmail','authPassword'].forEach(id => { $(id).addEventListener('keydown', (e) => { if(e.key === 'Enter') $('btnAuthSubmit').click(); }); });
+$('btnLogout').addEventListener('click', () => auth.signOut());
+
+let currentUid = null;
+let jobs = [], sales = [], productos = [], consignaciones = [];
+
+auth.onAuthStateChanged(async (user) => {
+  if(user){
+    currentUid = user.uid;
+    $('authOverlay').style.display = 'none';
+    $('appRoot').style.display = 'block';
+    $('cloudNoteText').textContent = 'Conectado como ' + user.email + ' — datos compartidos con el panel principal.';
+    await loadFromStorage();
+  }else{
+    currentUid = null;
+    $('authOverlay').style.display = 'flex';
+    $('appRoot').style.display = 'none';
+  }
+});
+
+async function loadFromStorage(){
+  if(!currentUid) return;
+  try{
+    const snap = await db.collection(COLLECTION).doc(SHARED_DOC_ID).get();
+    const data = snap.exists ? snap.data() : {};
+    jobs = data.jobs || [];
+    sales = data.sales || [];
+    productos = data.productos || [];
+    consignaciones = data.consignaciones || [];
+  }catch(e){
+    console.error(e);
+    showToast('No se pudo conectar a la nube.');
+    jobs = []; sales = []; productos = []; consignaciones = [];
+  }
+  renderAll();
+  if(!$('c_fecha').value) $('c_fecha').valueAsDate = new Date();
+}
+
+async function persistConsignaciones(){
+  if(!currentUid) return;
+  try{ await db.collection(COLLECTION).doc(SHARED_DOC_ID).set({ consignaciones }, { merge: true }); }
+  catch(e){ console.error(e); showToast('No se pudo guardar en la nube.'); }
+}
+
+/* ---------------- STOCK (mismo criterio que productos.html) ---------------- */
+function piezasVendiblesJob(job){ return (job.data.piezasVendibles !== undefined) ? job.data.piezasVendibles : 1; }
+function jobsDeProducto(prodId){ return jobs.filter(j => j.data.productoId === prodId); }
+function vendiblesProducto(prodId){ return jobsDeProducto(prodId).reduce((a,j)=> a + piezasVendiblesJob(j), 0); }
+function vendidoDirectoProducto(prodId){
+  const jobIds = jobsDeProducto(prodId).map(j => j.id);
+  return sales.filter(s => jobIds.includes(s.jobId)).reduce((a,s)=> a + (s.cantidad || 1), 0);
+}
+function consignadoActivo(prodId, excludeId){
+  return consignaciones.filter(c => c.productoId === prodId && c.estadoPago !== 'Devuelto' && c.id !== excludeId).reduce((a,c)=> a + c.cantidad, 0);
+}
+function disponibleProducto(prodId, excludeId){
+  return Math.max(vendiblesProducto(prodId) - vendidoDirectoProducto(prodId) - consignadoActivo(prodId, excludeId), 0);
+}
+
+/* ---------------- FORM: producto select y stock preview ---------------- */
+function renderProductoSelect(){
+  const sel = $('c_producto');
+  const current = sel.value;
+  sel.innerHTML = '<option value="">Producto libre / sin código registrado</option>' +
+    productos.map(p => `<option value="${p.id}">${escapeHtml(p.codigo)} — ${escapeHtml(p.nombre)}</option>`).join('');
+  if(productos.some(p => p.id === current)) sel.value = current;
+  updateProductoUI();
+}
+
+function updateProductoUI(){
+  const val = $('c_producto').value;
+  const libreField = $('c_libreField');
+  const info = $('c_stockInfo');
+  if(!val){
+    libreField.style.display = 'block';
+    info.classList.add('hidden');
+  }else{
+    libreField.style.display = 'none';
+    const disp = disponibleProducto(val);
+    const cantidad = num($('c_cantidad').value);
+    info.classList.remove('hidden');
+    info.classList.toggle('warn', cantidad > disp);
+    info.innerHTML = 'Disponible en taller: <b>' + disp + ' piezas</b>' + (cantidad > disp ? ' · ⚠ Estás entregando más de lo disponible' : '');
+  }
+}
+$('c_producto').addEventListener('change', updateProductoUI);
+$('c_cantidad').addEventListener('input', updateProductoUI);
+
+$('btnGuardarConsignacion').addEventListener('click', async () => {
+  const tienda = $('c_tienda').value.trim();
+  const contacto = $('c_contacto').value.trim();
+  const productoId = $('c_producto').value || null;
+  const producto = productoId ? productos.find(p => p.id === productoId) : null;
+  const descripcionLibre = $('c_descripcionLibre').value.trim();
+  const cantidad = Math.max(1, Math.round(num($('c_cantidad').value) || 0));
+  const precioUnitario = num($('c_precioUnitario').value);
+  const fecha = $('c_fecha').value ? new Date($('c_fecha').value + 'T12:00:00').getTime() : Date.now();
+  const estadoPago = $('c_estadoPago').value;
+  const notas = $('c_notas').value.trim();
+
+  if(!tienda){ showToast('Ingresa el nombre de la tienda'); $('c_tienda').focus(); return; }
+  if(!productoId && !descripcionLibre){ showToast('Describe el producto entregado o elige uno con código'); $('c_descripcionLibre').focus(); return; }
+  if(cantidad <= 0){ showToast('Ingresa la cantidad entregada'); $('c_cantidad').focus(); return; }
+  if(precioUnitario <= 0){ showToast('Ingresa el precio pactado por unidad'); $('c_precioUnitario').focus(); return; }
+
+  if(productoId && cantidad > disponibleProducto(productoId)){
+    if(!confirm('Estás entregando más piezas de las disponibles en taller (' + disponibleProducto(productoId) + '). ¿Continuar de todos modos?')) return;
+  }
+
+  consignaciones.push({
+    id: 'consig_' + Date.now() + '_' + Math.random().toString(36).slice(2,7),
+    tienda, contacto,
+    productoId,
+    productoNombre: producto ? (producto.codigo + ' — ' + producto.nombre) : descripcionLibre,
+    cantidad, precioUnitario, valorTotal: cantidad * precioUnitario,
+    estadoPago, montoPagado: (estadoPago === 'Pagado') ? cantidad * precioUnitario : 0,
+    fecha, notas, createdAt: Date.now()
+  });
+
+  await persistConsignaciones();
+  renderAll();
+  showToast('Entrega registrada');
+
+  $('c_tienda').value = ''; $('c_contacto').value = ''; $('c_producto').value = '';
+  $('c_descripcionLibre').value = ''; $('c_cantidad').value = ''; $('c_precioUnitario').value = '';
+  $('c_estadoPago').value = 'Pendiente'; $('c_notas').value = '';
+  $('c_fecha').valueAsDate = new Date();
+  updateProductoUI();
+});
+
+window.marcarPago = async function(id){
+  const c = consignaciones.find(x => x.id === id);
+  if(!c) return;
+  const nuevo = prompt('Monto pagado hasta ahora para "' + c.tienda + '" (de ' + money(c.valorTotal) + '):', c.montoPagado.toFixed(2));
+  if(nuevo === null) return;
+  const monto = Math.max(0, num(nuevo));
+  c.montoPagado = monto;
+  if(monto <= 0) c.estadoPago = 'Pendiente';
+  else if(monto >= c.valorTotal) c.estadoPago = 'Pagado';
+  else c.estadoPago = 'Parcial';
+  await persistConsignaciones();
+  renderAll();
+  showToast('Estado de pago actualizado');
+};
+
+window.marcarDevuelto = async function(id){
+  const c = consignaciones.find(x => x.id === id);
+  if(!c) return;
+  if(!confirm('¿Marcar esta entrega como devuelta (no se vendió)? Las piezas volverán a estar disponibles en taller.')) return;
+  c.estadoPago = 'Devuelto';
+  await persistConsignaciones();
+  renderAll();
+  showToast('Entrega marcada como devuelta');
+};
+
+window.deleteConsignacion = async function(id){
+  if(!confirm('¿Eliminar este registro de consignación?')) return;
+  consignaciones = consignaciones.filter(c => c.id !== id);
+  await persistConsignaciones();
+  renderAll();
+  showToast('Registro eliminado');
+};
+
+/* ---------------- TABLA, RESUMEN Y STATS ---------------- */
+function renderConsignacionesTable(){
+  const container = $('consignacionesContainer');
+  if(consignaciones.length === 0){
+    container.innerHTML = `<div class="empty"><div class="big">Todavía no hay entregas registradas</div>Completa el formulario de arriba para registrar tu primera consignación.</div>`;
+    return;
+  }
+  const sorted = [...consignaciones].sort((a,b)=> b.fecha - a.fecha);
+  container.innerHTML = `
+    <table>
+      <thead>
+        <tr><th>Tienda</th><th>Producto</th><th>Fecha</th><th class="num">Cant.</th><th class="num">Precio/u</th><th class="num">Total</th><th class="num">Pagado</th><th>Estado</th><th></th></tr>
+      </thead>
+      <tbody>
+        ${sorted.map(c => `
+          <tr>
+            <td class="name">${escapeHtml(c.tienda)}${c.contacto ? `<span class="sub">${escapeHtml(c.contacto)}</span>` : ''}</td>
+            <td class="date">${escapeHtml(c.productoNombre)}</td>
+            <td class="date">${new Date(c.fecha).toLocaleDateString('es-BO', {day:'2-digit', month:'short', year:'numeric'})}</td>
+            <td class="num">${c.cantidad}</td>
+            <td class="num">${money(c.precioUnitario)}</td>
+            <td class="num">${money(c.valorTotal)}</td>
+            <td class="num">${money(c.montoPagado)}</td>
+            <td><span class="estado-tag ${c.estadoPago}">${c.estadoPago}</span></td>
+            <td>
+              <div class="row-actions">
+                <button class="icon-btn pdf" title="Exportar comprobante PDF" onclick="exportComprobante('${c.id}')">PDF</button>
+                ${c.estadoPago !== 'Devuelto' ? `<button class="icon-btn pay" title="Actualizar pago" onclick="marcarPago('${c.id}')">Bs</button>` : ''}
+                ${c.estadoPago !== 'Devuelto' && c.estadoPago !== 'Pagado' ? `<button class="icon-btn" title="Marcar devuelto" onclick="marcarDevuelto('${c.id}')">↺</button>` : ''}
+                <button class="icon-btn" title="Eliminar" onclick="deleteConsignacion('${c.id}')">✕</button>
+              </div>
+            </td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>`;
+}
+
+function renderTiendasResumen(){
+  const c = $('tiendasResumenContainer');
+  if(consignaciones.length === 0){
+    c.innerHTML = `<div class="empty" style="margin-top:0;"><div class="big">Sin datos aún</div>Aquí verás cuánto tiene cada tienda y cuánto te debe.</div>`;
+    return;
+  }
+  const porTienda = {};
+  consignaciones.forEach(cc => {
+    if(!porTienda[cc.tienda]) porTienda[cc.tienda] = { piezas:0, valorTotal:0, pagado:0, activas:0 };
+    const t = porTienda[cc.tienda];
+    if(cc.estadoPago !== 'Devuelto'){ t.piezas += cc.cantidad; t.valorTotal += cc.valorTotal; t.pagado += cc.montoPagado; t.activas++; }
+  });
+  const nombres = Object.keys(porTienda).sort((a,b)=> (porTienda[b].valorTotal-porTienda[b].pagado) - (porTienda[a].valorTotal-porTienda[a].pagado));
+  c.innerHTML = nombres.map(nombre => {
+    const t = porTienda[nombre];
+    const pendiente = t.valorTotal - t.pagado;
+    return `
+      <div style="padding:10px;background:var(--surface-2);border-radius:6px;margin-bottom:8px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:13px;font-weight:500;">${escapeHtml(nombre)}</span>
+          <span style="font-family:var(--font-mono);font-weight:700;color:${pendiente>0?'var(--warn)':'var(--good)'};">${money(pendiente)}</span>
+        </div>
+        <div style="font-size:11px;color:var(--muted);margin-top:3px;">${t.piezas} piezas en ${t.activas} entrega(s) · ${pendiente>0?'pendiente de cobro':'liquidado'}</div>
+      </div>`;
+  }).join('');
+}
+
+function renderStats(){
+  const activas = consignaciones.filter(c => c.estadoPago !== 'Devuelto');
+  const entregado = activas.reduce((a,c)=> a + c.cantidad, 0);
+  const valorTotal = activas.reduce((a,c)=> a + c.valorTotal, 0);
+  const cobrado = activas.reduce((a,c)=> a + c.montoPagado, 0);
+  const pendiente = valorTotal - cobrado;
+  $('statEntregado').textContent = entregado;
+  $('statValorTotal').textContent = money(valorTotal);
+  $('statPendienteCobro').textContent = money(pendiente);
+  $('statCobrado').textContent = money(cobrado);
+}
+
+function renderAll(){
+  renderProductoSelect();
+  renderConsignacionesTable();
+  renderTiendasResumen();
+  renderStats();
+}
+
+/* ---------------- PDF ---------------- */
+function pdfHeader(doc, subtitle){
+  doc.setFontSize(22); doc.setTextColor(255,107,53); doc.setFont(undefined, 'bold');
+  doc.text('3Dboys', 14, 20);
+  doc.setFont(undefined, 'normal'); doc.setFontSize(11); doc.setTextColor(110);
+  doc.text(subtitle, 14, 27);
+  doc.setDrawColor(225); doc.line(14, 31, 196, 31);
+}
+function pdfFooter(doc){
+  doc.setFontSize(8); doc.setTextColor(150);
+  doc.text('Documento generado por 3Dboys — ' + new Date().toLocaleString('es-BO'), 14, 289);
+}
+
+window.exportComprobante = function(id){
+  const c = consignaciones.find(x => x.id === id);
+  if(!c){ showToast('No se encontró el registro'); return; }
+  if(!window.jspdf){ showToast('La librería de PDF no cargó, revisa tu conexión'); return; }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  pdfHeader(doc, 'Comprobante de entrega en consignación');
+
+  let y = 40;
+  doc.setFontSize(10); doc.setTextColor(30);
+  doc.text('Tienda: ' + c.tienda, 14, y); y += 6;
+  if(c.contacto){ doc.text('Contacto: ' + c.contacto, 14, y); y += 6; }
+  doc.text('Producto: ' + c.productoNombre, 14, y); y += 6;
+  doc.text('Fecha de entrega: ' + new Date(c.fecha).toLocaleDateString('es-BO'), 14, y); y += 6;
+  doc.text('Cantidad entregada: ' + c.cantidad, 14, y); y += 6;
+  doc.text('Precio pactado por unidad: ' + money(c.precioUnitario), 14, y); y += 6;
+  doc.text('Estado de pago: ' + c.estadoPago, 14, y); y += 6;
+  if(c.notas){
+    doc.text('Notas:', 14, y); y += 5;
+    const lines = doc.splitTextToSize(c.notas, 180);
+    doc.setTextColor(90); doc.text(lines, 14, y); doc.setTextColor(30);
+    y += lines.length * 5 + 3;
+  }
+  y += 8;
+  doc.setFontSize(14); doc.setTextColor(255,107,53); doc.setFont(undefined, 'bold');
+  doc.text('VALOR TOTAL DEL LOTE: ' + money(c.valorTotal), 14, y);
+  doc.setFont(undefined, 'normal');
+
+  pdfFooter(doc);
+  doc.save('3Dboys_consignacion_' + c.tienda.replace(/\s+/g, '_') + '.pdf');
+  showToast('Comprobante PDF generado');
+};
+
+$('btnReporteConsignacionesPDF').addEventListener('click', () => {
+  if(consignaciones.length === 0){ showToast('Todavía no hay consignaciones para exportar'); return; }
+  if(!window.jspdf){ showToast('La librería de PDF no cargó, revisa tu conexión'); return; }
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+  pdfHeader(doc, 'Reporte de consignaciones');
+
+  const sorted = [...consignaciones].sort((a,b)=> b.fecha - a.fecha);
+  const rows = sorted.map(c => [
+    c.tienda, c.productoNombre, new Date(c.fecha).toLocaleDateString('es-BO'),
+    c.cantidad, money(c.precioUnitario), money(c.valorTotal), money(c.montoPagado), c.estadoPago
+  ]);
+
+  doc.autoTable({
+    startY: 38,
+    head: [['Tienda', 'Producto', 'Fecha', 'Cant.', 'Precio/u', 'Total', 'Pagado', 'Estado']],
+    body: rows,
+    styles: { fontSize: 7.5, cellPadding: 3 },
+    headStyles: { fillColor: [36, 34, 32] },
+    columnStyles: { 3:{halign:'right'}, 4:{halign:'right'}, 5:{halign:'right'}, 6:{halign:'right'} }
+  });
+
+  const finalY = doc.lastAutoTable.finalY + 10;
+  const activas = consignaciones.filter(c => c.estadoPago !== 'Devuelto');
+  const valorTotal = activas.reduce((a,c)=> a + c.valorTotal, 0);
+  const cobrado = activas.reduce((a,c)=> a + c.montoPagado, 0);
+
+  doc.setFontSize(10); doc.setTextColor(30); doc.setFont(undefined, 'bold');
+  doc.text('Resumen general', 14, finalY);
+  doc.setFont(undefined, 'normal');
+  doc.text('Consignaciones activas: ' + activas.length, 14, finalY + 6);
+  doc.text('Valor total en consignación: ' + money(valorTotal), 14, finalY + 12);
+  doc.text('Cobrado: ' + money(cobrado), 14, finalY + 18);
+  doc.text('Pendiente de cobro: ' + money(valorTotal - cobrado), 14, finalY + 24);
+
+  pdfFooter(doc);
+  doc.save('3Dboys_reporte_consignaciones.pdf');
+  showToast('Reporte PDF generado');
+});
+</script>
+</body>
+</html>
