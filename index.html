@@ -296,11 +296,6 @@
   /* table scroll wrapper so wide tables don't break layout on phones */
   #tableContainer, #purchasesContainer, #salesContainer{overflow-x:auto;-webkit-overflow-scrolling:touch;}
   #tableContainer table, #purchasesContainer table, #salesContainer table{min-width:640px;}
-  #tableContainer table{min-width:780px;}
-
-  thead th.sortable{cursor:pointer;user-select:none;white-space:nowrap;}
-  thead th.sortable:hover{color:var(--text);}
-  thead th.sortable .arrow{color:var(--accent);}
 
   /* ================= RESPONSIVE / MOBILE ================= */
   @media (max-width:640px){
@@ -409,6 +404,7 @@
     <button class="tab-btn" data-tab="compras">Compras y Materiales</button>
     <button class="tab-btn" onclick="window.location.href='productos.html'">Productos ↗</button>
     <button class="tab-btn" onclick="window.location.href='consignaciones.html'">Consignaciones ↗</button>
+    <button class="tab-btn" onclick="window.location.href='clientes.html'">Clientes ↗</button>
   </div>
 
   <div id="tabTrabajos" class="tab-panel active">
@@ -423,20 +419,13 @@
       </div>
 
       <div class="field-row">
-        <div class="field"><label>Solicitado / procesado por</label><input type="text" id="f_cliente" placeholder="Nombre del cliente o encargado"></div>
+        <div class="field"><label>Solicitado / procesado por</label><input type="text" id="f_cliente" list="clientesDatalist" placeholder="Nombre del cliente o encargado"></div>
         <div class="field"><label>Fecha del trabajo</label><input type="date" id="f_fecha"></div>
       </div>
 
       <div class="field full">
         <label>Descripción / notas del trabajo</label>
         <textarea id="f_descripcion" placeholder="Detalles del pedido, color, acabado, referencias, etc."></textarea>
-      </div>
-
-      <div class="section-label">Repetición del trabajo</div>
-      <div class="field full">
-        <label>¿Cuántas veces se repitió esta impresión?</label>
-        <input type="number" id="f_multiplicador" min="1" step="1" value="1">
-        <div class="hint">Para trabajos repetitivos: ingresa abajo los datos de <b>UNA sola</b> impresión (gramos, tiempo, piezas, otros costos) y aquí cuántas veces se repitió. El sistema multiplica automáticamente todo para calcular el total.</div>
       </div>
 
       <div class="section-label">Material</div>
@@ -448,15 +437,15 @@
         <div class="hint">Solo aparecen materiales medidos en gramos/kilogramos (filamento, resina por peso), ya que el costo de impresión se calcula por gramo usado.</div>
       </div>
       <div class="field-row">
-        <div class="field"><label>Cantidad usada por impresión (g)</label><input type="number" id="f_gramos" min="0" step="0.1" placeholder="120"></div>
+        <div class="field"><label>Cantidad usada (g)</label><input type="number" id="f_gramos" min="0" step="0.1" placeholder="120"></div>
         <div class="field" id="f_precioKgManualField"><label>Precio filamento (Bs/kg)</label><input type="number" id="f_precioKgManual" min="0" step="0.1" placeholder="95"></div>
       </div>
       <div class="material-info hidden" id="f_materialInfo"></div>
 
       <div class="section-label">Impresión</div>
       <div class="field-row">
-        <div class="field"><label>Tiempo por impresión — horas</label><input type="number" id="f_horasImp" min="0" step="1" placeholder="4"></div>
-        <div class="field"><label>Tiempo por impresión — minutos</label><input type="number" id="f_minImp" min="0" max="59" step="1" placeholder="30"></div>
+        <div class="field"><label>Tiempo de impresión — horas</label><input type="number" id="f_horasImp" min="0" step="1" placeholder="4"></div>
+        <div class="field"><label>Tiempo de impresión — minutos</label><input type="number" id="f_minImp" min="0" max="59" step="1" placeholder="30"></div>
       </div>
       <div class="field full">
         <label>Tipo de impresora</label>
@@ -486,18 +475,18 @@
 
       <div class="section-label">Mano de obra y otros</div>
       <div class="field-row">
-        <div class="field"><label>Horas de trabajo por impresión (diseño/post-proceso)</label><input type="number" id="f_horasTrabajo" min="0" step="0.1" placeholder="0.5"></div>
+        <div class="field"><label>Horas de trabajo (diseño/post-proceso)</label><input type="number" id="f_horasTrabajo" min="0" step="0.1" placeholder="0.5"></div>
         <div class="field"><label>Tarifa mano de obra (Bs/hora)</label><input type="number" id="f_tarifaHora" min="0" step="0.1" placeholder="20"></div>
       </div>
       <div class="field-row">
-        <div class="field"><label>Otros costos fijos por impresión (Bs)</label><input type="number" id="f_otros" min="0" step="0.1" placeholder="Pintura, tornillos, etc."></div>
+        <div class="field"><label>Otros costos fijos (Bs)</label><input type="number" id="f_otros" min="0" step="0.1" placeholder="Pintura, tornillos, etc."></div>
         <div class="field"><label>Colchón por fallas (%)</label><input type="number" id="f_fallas" min="0" step="1" placeholder="10"></div>
       </div>
 
       <div class="section-label">Precio de venta</div>
       <div class="field-row">
-        <div class="field"><label>Piezas impresas por impresión</label><input type="number" id="f_piezas" min="1" step="1" value="1"></div>
-        <div class="field"><label>Piezas con fallas por impresión (no vendibles)</label><input type="number" id="f_piezasFallidas" min="0" step="1" placeholder="0"></div>
+        <div class="field"><label>Piezas impresas en este lote</label><input type="number" id="f_piezas" min="1" step="1" value="1"></div>
+        <div class="field"><label>Piezas con fallas (no vendibles)</label><input type="number" id="f_piezasFallidas" min="0" step="1" placeholder="0"></div>
       </div>
       <div class="material-info hidden" id="f_piezasInfo"></div>
       <div class="field">
@@ -519,7 +508,6 @@
         <div class="lbl">Precio de venta sugerido</div>
         <div class="val" id="pv_precio">Bs 0.00</div>
         <div class="sub">Ganancia estimada: <b id="pv_ganancia">Bs 0.00</b></div>
-        <div class="sub" id="pv_multiplicadorNota"></div>
       </div>
 
       <div class="barviz" id="pv_barviz"></div>
@@ -566,7 +554,8 @@
 
         <div class="field full">
           <label>Cliente / comprador</label>
-          <input type="text" id="v_cliente" placeholder="Nombre del cliente">
+          <input type="text" id="v_cliente" list="clientesDatalist" placeholder="Nombre del cliente">
+          <datalist id="clientesDatalist"></datalist>
         </div>
 
         <div class="field-row">
@@ -798,13 +787,14 @@ const COLORS = {
   manoObra: '#c9a9e0', otros: '#6fa8dc', fallas: '#e8595a', margen: '#4ecdc4'
 };
 
-const FIELD_IDS = ['f_nombre','f_cliente','f_descripcion','f_multiplicador','f_gramos','f_precioKgManual','f_horasImp','f_minImp',
+const FIELD_IDS = ['f_nombre','f_cliente','f_descripcion','f_gramos','f_precioKgManual','f_horasImp','f_minImp',
   'f_watts','f_mantenimiento','f_horasTrabajo','f_tarifaHora','f_otros','f_fallas','f_piezas','f_piezasFallidas','f_margen'];
 
 let jobs = [];
 let materials = [];
 let purchases = [];
 let sales = [];
+let clientes = [];
 
 function num(v){ const n = parseFloat(v); return isNaN(n) ? 0 : n; }
 function money(v){ return 'Bs ' + v.toLocaleString('es-BO', {minimumFractionDigits:2, maximumFractionDigits:2}); }
@@ -836,9 +826,8 @@ function showToast(msg){
 }
 
 function readForm(){
-  const horasImpBase = num($('f_horasImp').value);
-  const minImpBase = num($('f_minImp').value);
-  const multiplicador = Math.max(1, Math.round(num($('f_multiplicador').value) || 1));
+  const horasImp = num($('f_horasImp').value);
+  const minImp = num($('f_minImp').value);
   const materialId = $('f_materialId').value;
   let precioKg, materialNombre;
   if(materialId === 'manual'){
@@ -849,21 +838,9 @@ function readForm(){
     precioKg = m ? m.costoPromedio * 1000 : 0;
     materialNombre = m ? m.nombre : '';
   }
-  const gramosBase = num($('f_gramos').value);
-  const horasTrabajoBase = num($('f_horasTrabajo').value);
-  const otrosBase = num($('f_otros').value);
-  const piezasBase = Math.max(1, Math.round(num($('f_piezas').value) || 1));
-  const piezasFallidasBase = Math.max(0, Math.round(num($('f_piezasFallidas').value)));
-
-  const gramos = gramosBase * multiplicador;
-  const horasImpresionBase = horasImpBase + (minImpBase / 60);
-  const horasImpresion = horasImpresionBase * multiplicador;
-  const horasTrabajo = horasTrabajoBase * multiplicador;
-  const otros = otrosBase * multiplicador;
-  const piezas = piezasBase * multiplicador;
-  const piezasFallidas = piezasFallidasBase * multiplicador;
+  const piezas = Math.max(1, Math.round(num($('f_piezas').value) || 1));
+  const piezasFallidas = Math.max(0, Math.round(num($('f_piezasFallidas').value)));
   const piezasVendibles = Math.max(piezas - piezasFallidas, 0);
-
   const fecha = $('f_fecha').value ? new Date($('f_fecha').value + 'T12:00:00').getTime() : Date.now();
   return {
     nombre: $('f_nombre').value.trim(),
@@ -871,18 +848,17 @@ function readForm(){
     fecha,
     descripcion: $('f_descripcion').value.trim(),
     materialId, materialNombre,
-    multiplicador,
-    gramosBase, horasImpBase, minImpBase, horasTrabajoBase, otrosBase, piezasBase, piezasFallidasBase,
-    gramos, precioKg,
-    horasImp: horasImpBase, minImp: minImpBase,
-    horasImpresion,
+    gramos: num($('f_gramos').value),
+    precioKg,
+    horasImp, minImp,
+    horasImpresion: horasImp + (minImp / 60),
     tipoImpresora: $('f_tipoImpresora').value,
     watts: num($('f_watts').value),
     precioKwh: num($('f_precioKwh').value),
     mantenimiento: num($('f_mantenimiento').value),
-    horasTrabajo,
+    horasTrabajo: num($('f_horasTrabajo').value),
     tarifaHora: num($('f_tarifaHora').value),
-    otros,
+    otros: num($('f_otros').value),
     fallas: num($('f_fallas').value),
     piezas, piezasFallidas, piezasVendibles,
     margen: num($('f_margen').value),
@@ -941,12 +917,11 @@ function updateMaterialSelectionUI(){
     manualField.classList.add('hidden');
     const m = materials.find(x => x.id === val);
     if(m){
-      const mult = Math.max(1, Math.round(num($('f_multiplicador').value) || 1));
-      const gramos = num($('f_gramos').value) * mult;
+      const gramos = num($('f_gramos').value);
       const suficiente = gramos <= m.stock;
       info.classList.remove('hidden');
       info.classList.toggle('warn', !suficiente);
-      info.innerHTML = 'Precio usado: <b>' + formatCosto(m) + '</b> · Consumo total (' + mult + 'x): <b>' + gramos.toFixed(0) + ' g</b> · Stock disponible: <b>' + formatStock(m) + '</b>' +
+      info.innerHTML = 'Precio usado: <b>' + formatCosto(m) + '</b> · Stock disponible: <b>' + formatStock(m) + '</b>' +
         (suficiente ? '' : ' · ⚠ No alcanza el stock, quedará en negativo');
     }
   }
@@ -955,7 +930,6 @@ function updateMaterialSelectionUI(){
 
 $('f_materialId').addEventListener('change', updateMaterialSelectionUI);
 $('f_gramos').addEventListener('input', updateMaterialSelectionUI);
-$('f_multiplicador').addEventListener('input', updateMaterialSelectionUI);
 
 function renderPreview(){
   const d = readForm();
@@ -963,20 +937,11 @@ function renderPreview(){
   $('pv_precio').textContent = money(c.precioVenta);
   $('pv_ganancia').textContent = money(c.ganancia);
 
-  const multNota = $('pv_multiplicadorNota');
-  if(d.multiplicador > 1){
-    multNota.innerHTML = 'Incluye <b>' + d.multiplicador + '</b> repeticiones de esta impresión';
-  }else{
-    multNota.innerHTML = '';
-  }
-
   const infoBox = $('f_piezasInfo');
   if(d.piezas > 1){
     infoBox.classList.remove('hidden');
     infoBox.classList.toggle('warn', d.piezasVendibles === 0);
-    infoBox.innerHTML = 'Piezas vendibles: <b>' + d.piezasVendibles + ' / ' + d.piezas + '</b>' +
-      (d.multiplicador > 1 ? ' (' + d.piezasBase + ' por impresión × ' + d.multiplicador + ')' : '') +
-      ' · Precio sugerido por unidad: <b>' + money(c.precioUnitario) + '</b>' +
+    infoBox.innerHTML = 'Piezas vendibles: <b>' + d.piezasVendibles + ' / ' + d.piezas + '</b> · Precio sugerido por unidad: <b>' + money(c.precioUnitario) + '</b>' +
       (d.piezasVendibles === 0 ? ' · ⚠ No quedan piezas vendibles en este lote' : '');
   }else{
     infoBox.classList.add('hidden');
@@ -1007,7 +972,7 @@ function renderPreview(){
   `).join('') + `
     <div class="layer total">
       <span class="dot" style="background:transparent"></span>
-      <span class="name">Precio de venta${d.multiplicador > 1 ? ' (' + d.multiplicador + 'x)' : ''}</span>
+      <span class="name">Precio de venta</span>
       <span class="amt">${money(c.precioVenta)}</span>
     </div>
   ` + (d.piezas > 1 ? `
@@ -1036,37 +1001,6 @@ function escapeHtml(str){
   return d.innerHTML;
 }
 
-let jobsSortField = 'fecha';
-let jobsSortDir = 'desc';
-
-function jobSortValue(j, field){
-  switch(field){
-    case 'fecha': return j.data.fecha || j.createdAt;
-    case 'cliente': return (j.data.cliente || '').toLowerCase();
-    case 'nombre': return (j.data.nombre || '').toLowerCase();
-    case 'costoTotal': return j.calc.costoTotal;
-    case 'precioVenta': return j.calc.precioVenta;
-    case 'ganancia': return j.calc.ganancia;
-    case 'margen': return j.data.margen || 0;
-    default: return j.data.fecha || j.createdAt;
-  }
-}
-
-window.setJobsSort = function(field){
-  if(jobsSortField === field){
-    jobsSortDir = jobsSortDir === 'asc' ? 'desc' : 'asc';
-  }else{
-    jobsSortField = field;
-    jobsSortDir = (field === 'fecha') ? 'desc' : 'asc';
-  }
-  renderTable();
-};
-
-function jobsSortArrow(field){
-  if(jobsSortField !== field) return '';
-  return ' <span class="arrow">' + (jobsSortDir === 'asc' ? '▲' : '▼') + '</span>';
-}
-
 function renderTable(){
   const container = $('tableContainer');
   if(jobs.length === 0){
@@ -1077,24 +1011,13 @@ function renderTable(){
       </div>`;
     return;
   }
-  const sorted = [...jobs].sort((a,b)=>{
-    const va = jobSortValue(a, jobsSortField);
-    const vb = jobSortValue(b, jobsSortField);
-    let cmp = (typeof va === 'string') ? va.localeCompare(vb) : (va - vb);
-    return jobsSortDir === 'asc' ? cmp : -cmp;
-  });
+  const sorted = [...jobs].sort((a,b)=> (b.data.fecha||b.createdAt) - (a.data.fecha||a.createdAt));
   container.innerHTML = `
     <table>
       <thead>
         <tr>
-          <th class="sortable" onclick="setJobsSort('nombre')">Trabajo${jobsSortArrow('nombre')}</th>
-          <th class="sortable" onclick="setJobsSort('cliente')">Persona${jobsSortArrow('cliente')}</th>
-          <th class="sortable" onclick="setJobsSort('fecha')">Fecha${jobsSortArrow('fecha')}</th>
-          <th class="num sortable" onclick="setJobsSort('costoTotal')">Costo total${jobsSortArrow('costoTotal')}</th>
-          <th class="num sortable" onclick="setJobsSort('precioVenta')">Precio venta${jobsSortArrow('precioVenta')}</th>
-          <th class="num sortable" onclick="setJobsSort('ganancia')">Ganancia${jobsSortArrow('ganancia')}</th>
-          <th class="num sortable" onclick="setJobsSort('margen')">Margen${jobsSortArrow('margen')}</th>
-          <th>Rep.</th><th>Piezas</th><th></th>
+          <th>Trabajo</th><th>Fecha</th><th class="num">Costo total</th>
+          <th class="num">Precio venta</th><th class="num">Ganancia</th><th class="num">Margen</th><th>Piezas</th><th></th>
         </tr>
       </thead>
       <tbody>
@@ -1104,18 +1027,14 @@ function renderTable(){
           const piezasBadge = total > 1
             ? `<span class="margin-tag" style="background:#4ecdc422;color:var(--good);">${restantes}/${total} restantes</span>`
             : `<span class="date">-</span>`;
-          const mult = j.data.multiplicador || 1;
-          const repBadge = mult > 1 ? `<span class="margin-tag">${mult}x</span>` : `<span class="date">-</span>`;
           return `
           <tr>
-            <td class="name">${escapeHtml(j.data.nombre || 'Sin nombre')}</td>
-            <td class="date">${escapeHtml(j.data.cliente || '-')}</td>
+            <td class="name">${escapeHtml(j.data.nombre || 'Sin nombre')}${j.data.cliente ? `<span class="client">${escapeHtml(j.data.cliente)}</span>` : ''}</td>
             <td class="date">${new Date(j.data.fecha || j.createdAt).toLocaleDateString('es-BO', {day:'2-digit', month:'short', year:'numeric'})}</td>
             <td class="num">${money(j.calc.costoTotal)}</td>
             <td class="num">${money(j.calc.precioVenta)}</td>
             <td class="num">${money(j.calc.ganancia)}</td>
             <td class="num"><span class="margin-tag">${j.data.margen}%</span></td>
-            <td>${repBadge}</td>
             <td>${piezasBadge}</td>
             <td>
               <div class="row-actions">
@@ -1142,28 +1061,26 @@ function toDateInputValue(ts){
 window.loadJob = function(id){
   const j = jobs.find(x => x.id === id);
   if(!j) return;
-  const d = j.data;
-  $('f_nombre').value = d.nombre;
-  $('f_cliente').value = d.cliente || '';
-  $('f_fecha').value = toDateInputValue(d.fecha || j.createdAt);
-  $('f_descripcion').value = d.descripcion || '';
-  $('f_materialId').value = (d.materialId && materials.some(m => m.id === d.materialId)) ? d.materialId : 'manual';
-  $('f_multiplicador').value = d.multiplicador || 1;
-  $('f_gramos').value = (d.gramosBase !== undefined) ? d.gramosBase : d.gramos;
-  $('f_precioKgManual').value = d.precioKg;
-  $('f_horasImp').value = (d.horasImpBase !== undefined) ? d.horasImpBase : d.horasImp;
-  $('f_minImp').value = (d.minImpBase !== undefined) ? d.minImpBase : d.minImp;
-  $('f_tipoImpresora').value = d.tipoImpresora || '';
-  $('f_watts').value = d.watts;
-  $('f_precioKwh').value = d.precioKwh;
-  $('f_mantenimiento').value = d.mantenimiento;
-  $('f_horasTrabajo').value = (d.horasTrabajoBase !== undefined) ? d.horasTrabajoBase : d.horasTrabajo;
-  $('f_tarifaHora').value = d.tarifaHora;
-  $('f_otros').value = (d.otrosBase !== undefined) ? d.otrosBase : d.otros;
-  $('f_fallas').value = d.fallas;
-  $('f_piezas').value = (d.piezasBase !== undefined) ? d.piezasBase : ((d.piezas !== undefined) ? d.piezas : 1);
-  $('f_piezasFallidas').value = (d.piezasFallidasBase !== undefined) ? d.piezasFallidasBase : ((d.piezasFallidas !== undefined) ? d.piezasFallidas : 0);
-  $('f_margen').value = d.margen;
+  $('f_nombre').value = j.data.nombre;
+  $('f_cliente').value = j.data.cliente || '';
+  $('f_fecha').value = toDateInputValue(j.data.fecha || j.createdAt);
+  $('f_descripcion').value = j.data.descripcion || '';
+  $('f_materialId').value = (j.data.materialId && materials.some(m => m.id === j.data.materialId)) ? j.data.materialId : 'manual';
+  $('f_gramos').value = j.data.gramos;
+  $('f_precioKgManual').value = j.data.precioKg;
+  $('f_horasImp').value = j.data.horasImp;
+  $('f_minImp').value = j.data.minImp;
+  $('f_tipoImpresora').value = j.data.tipoImpresora || '';
+  $('f_watts').value = j.data.watts;
+  $('f_precioKwh').value = j.data.precioKwh;
+  $('f_mantenimiento').value = j.data.mantenimiento;
+  $('f_horasTrabajo').value = j.data.horasTrabajo;
+  $('f_tarifaHora').value = j.data.tarifaHora;
+  $('f_otros').value = j.data.otros;
+  $('f_fallas').value = j.data.fallas;
+  $('f_piezas').value = (j.data.piezas !== undefined) ? j.data.piezas : 1;
+  $('f_piezasFallidas').value = (j.data.piezasFallidas !== undefined) ? j.data.piezasFallidas : 0;
+  $('f_margen').value = j.data.margen;
   updateMaterialSelectionUI();
   renderPreview();
   window.scrollTo({top:0, behavior:'smooth'});
@@ -1212,6 +1129,7 @@ async function loadFromStorage(){
       materials = data.materials || [];
       purchases = data.purchases || [];
       sales = data.sales || [];
+      clientes = data.clientes || [];
       const d = data.defaults;
       if(d){
         if(d.precioKg !== undefined) $('f_precioKgManual').value = d.precioKg;
@@ -1224,12 +1142,12 @@ async function loadFromStorage(){
         if(d.margen !== undefined) $('f_margen').value = d.margen;
       }
     }else{
-      jobs = []; materials = []; purchases = []; sales = [];
+      jobs = []; materials = []; purchases = []; sales = []; clientes = [];
     }
   }catch(e){
     console.error('Error leyendo datos', e);
     showToast('No se pudo conectar a la nube.');
-    jobs = []; materials = []; purchases = []; sales = [];
+    jobs = []; materials = []; purchases = []; sales = []; clientes = [];
   }
   renderAll();
   renderMaterialSelectOptions();
@@ -1237,9 +1155,15 @@ async function loadFromStorage(){
   refreshMaterialesDatalist();
   renderSalesJobSelect();
   renderVentasAll();
+  renderClientesDatalist();
   if(!$('c_fecha').value) $('c_fecha').valueAsDate = new Date();
   if(!$('v_fecha').value) $('v_fecha').valueAsDate = new Date();
   if(!$('f_fecha').value) $('f_fecha').valueAsDate = new Date();
+}
+
+function renderClientesDatalist(){
+  const dl = $('clientesDatalist');
+  dl.innerHTML = clientes.map(c => `<option value="${escapeHtml(c.nombre)}"></option>`).join('');
 }
 
 function clearForm(keepDefaults=true){
@@ -1250,7 +1174,6 @@ function clearForm(keepDefaults=true){
   $('f_tipoImpresora').value = '';
   $('f_materialId').value = 'manual';
   if(keepDefaults){ Object.entries(keep).forEach(([k,v]) => { $(keepMap[k]).value = v; }); }
-  $('f_multiplicador').value = 1;
   $('f_piezas').value = 1;
   $('f_piezasFallidas').value = '';
   updateMaterialSelectionUI();
@@ -1791,13 +1714,8 @@ function buildProformaPdf(d, c, createdAt){
   doc.text('Cliente / Solicitado por: ' + (d.cliente || '-'), 14, y); y += 6;
   doc.text('Fecha: ' + new Date(createdAt).toLocaleDateString('es-BO'), 14, y); y += 6;
   doc.text('Tipo de impresora: ' + (d.tipoImpresora || '-'), 14, y); y += 6;
-  if(d.multiplicador && d.multiplicador > 1){
-    doc.text('Repeticiones de la impresión: ' + d.multiplicador + 'x', 14, y); y += 6;
-    doc.text('Tiempo por impresión: ' + tiempoStr(d) + '  ·  Filamento por impresión: ' + (d.gramosBase || 0) + ' g', 14, y); y += 6;
-  } else {
-    doc.text('Tiempo de impresión: ' + tiempoStr(d), 14, y); y += 6;
-    doc.text('Filamento usado: ' + (d.gramos || 0) + ' g', 14, y); y += 6;
-  }
+  doc.text('Tiempo de impresión: ' + tiempoStr(d), 14, y); y += 6;
+  doc.text('Filamento usado: ' + (d.gramos || 0) + ' g', 14, y); y += 6;
   if(d.piezas && d.piezas > 1){
     doc.text('Piezas del lote: ' + d.piezas + ' (vendibles: ' + d.piezasVendibles + ')', 14, y); y += 6;
     doc.text('Precio por unidad: ' + money(c.precioUnitario), 14, y); y += 6;
@@ -1857,17 +1775,16 @@ $('btnReportePDF').addEventListener('click', () => {
   const rows = sorted.map(j => [
     j.data.nombre || '-', j.data.cliente || '-', new Date(j.data.fecha || j.createdAt).toLocaleDateString('es-BO'),
     money(j.calc.costoTotal), money(j.calc.precioVenta), money(j.calc.ganancia), j.data.margen + '%',
-    (j.data.multiplicador && j.data.multiplicador > 1) ? (j.data.multiplicador + 'x') : '-',
     piezasVendibles(j) > 1 ? (piezasRestantes(j) + '/' + piezasVendibles(j)) : '-'
   ]);
 
   doc.autoTable({
     startY: 38,
-    head: [['Trabajo', 'Cliente', 'Fecha', 'Costo total', 'Precio venta', 'Ganancia', 'Margen', 'Rep.', 'Piezas rest.']],
+    head: [['Trabajo', 'Cliente', 'Fecha', 'Costo total', 'Precio venta', 'Ganancia', 'Margen', 'Piezas rest.']],
     body: rows,
     styles: { fontSize: 8, cellPadding: 3 },
     headStyles: { fillColor: [36, 34, 32] },
-    columnStyles: { 3:{halign:'right'}, 4:{halign:'right'}, 5:{halign:'right'}, 6:{halign:'right'}, 7:{halign:'right'}, 8:{halign:'right'} }
+    columnStyles: { 3:{halign:'right'}, 4:{halign:'right'}, 5:{halign:'right'}, 6:{halign:'right'}, 7:{halign:'right'} }
   });
 
   const finalY = doc.lastAutoTable.finalY + 10;

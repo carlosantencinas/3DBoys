@@ -126,7 +126,7 @@
 
   .table-wrap{margin-top:28px;}
   #consignacionesContainer{overflow-x:auto;-webkit-overflow-scrolling:touch;}
-  #consignacionesContainer table{min-width:760px;}
+  #consignacionesContainer table{min-width:880px;}
   .hidden{display:none !important;}
 
   @media (max-width:640px){
@@ -184,6 +184,7 @@
       <a href="index.html">← Panel principal</a>
       <a href="productos.html">Productos</a>
       <a href="consignaciones.html" class="current">Consignaciones</a>
+      <a href="clientes.html">Clientes</a>
     </div>
   </header>
 
@@ -193,7 +194,8 @@
   </div>
 
   <div class="stats" id="statsBar">
-    <div class="stat"><div class="num" id="statEntregado">0</div><div class="lbl">Piezas entregadas</div></div>
+    <div class="stat"><div class="num" id="statEntregado">0</div><div class="lbl">Piezas entregadas (netas)</div></div>
+    <div class="stat"><div class="num" id="statDevuelto">0</div><div class="lbl">Piezas devueltas</div></div>
     <div class="stat"><div class="num" id="statValorTotal">Bs 0</div><div class="lbl">Valor en consignación</div></div>
     <div class="stat"><div class="num" id="statPendienteCobro">Bs 0</div><div class="lbl">Pendiente de cobro</div></div>
     <div class="stat"><div class="num" id="statCobrado">Bs 0</div><div class="lbl">Ya cobrado</div></div>
@@ -204,8 +206,9 @@
       <h2><span class="accent-dot"></span> Registrar entrega a tienda</h2>
 
       <div class="field-row">
-        <div class="field"><label>Tienda</label><input type="text" id="c_tienda" placeholder="Ej: Regalos El Sol"></div>
+        <div class="field"><label>Tienda</label><input type="text" id="c_tienda" list="clientesDatalist" placeholder="Ej: Regalos El Sol"></div>
         <div class="field"><label>Contacto</label><input type="text" id="c_contacto" placeholder="Nombre / teléfono"></div>
+        <datalist id="clientesDatalist"></datalist>
       </div>
 
       <div class="section-label">Producto entregado</div>
@@ -307,7 +310,7 @@ $('btnAuthSubmit').addEventListener('click', async () => {
 $('btnLogout').addEventListener('click', () => auth.signOut());
 
 let currentUid = null;
-let jobs = [], sales = [], productos = [], consignaciones = [];
+let jobs = [], sales = [], productos = [], consignaciones = [], clientes = [];
 
 auth.onAuthStateChanged(async (user) => {
   if(user){
@@ -332,12 +335,21 @@ async function loadFromStorage(){
     sales = data.sales || [];
     productos = data.productos || [];
     consignaciones = data.consignaciones || [];
+    clientes = data.clientes || [];
+    // migración: registros antiguos marcados como "Devuelto" por completo
+    consignaciones.forEach(c => {
+      if(c.cantidadDevuelta === undefined){
+        c.cantidadDevuelta = (c.estadoPago === 'Devuelto') ? c.cantidad : 0;
+      }
+      if(c.estadoPago === 'Devuelto') c.estadoPago = 'Pendiente'; // el estado de pago ahora es independiente de la devolución
+    });
   }catch(e){
     console.error(e);
     showToast('No se pudo conectar a la nube.');
-    jobs = []; sales = []; productos = []; consignaciones = [];
+    jobs = []; sales = []; productos = []; consignaciones = []; clientes = [];
   }
   renderAll();
+  renderClientesDatalist();
   if(!$('c_fecha').value) $('c_fecha').valueAsDate = new Date();
 }
 
@@ -355,8 +367,13 @@ function vendidoDirectoProducto(prodId){
   const jobIds = jobsDeProducto(prodId).map(j => j.id);
   return sales.filter(s => jobIds.includes(s.jobId)).reduce((a,s)=> a + (s.cantidad || 1), 0);
 }
+/* Cantidad neta = lo entregado menos lo que la tienda devolvió sin vender.
+   Las piezas devueltas dejan de contar como "fuera de taller". */
+function cantidadDevuelta(c){ return c.cantidadDevuelta || 0; }
+function cantidadNeta(c){ return Math.max(c.cantidad - cantidadDevuelta(c), 0); }
+function valorNeto(c){ return cantidadNeta(c) * c.precioUnitario; }
 function consignadoActivo(prodId, excludeId){
-  return consignaciones.filter(c => c.productoId === prodId && c.estadoPago !== 'Devuelto' && c.id !== excludeId).reduce((a,c)=> a + c.cantidad, 0);
+  return consignaciones.filter(c => c.productoId === prodId && c.id !== excludeId).reduce((a,c)=> a + cantidadNeta(c), 0);
 }
 function disponibleProducto(prodId, excludeId){
   return Math.max(vendiblesProducto(prodId) - vendidoDirectoProducto(prodId) - consignadoActivo(prodId, excludeId), 0);
@@ -391,6 +408,18 @@ function updateProductoUI(){
 $('c_producto').addEventListener('change', updateProductoUI);
 $('c_cantidad').addEventListener('input', updateProductoUI);
 
+function renderClientesDatalist(){
+  const dl = $('clientesDatalist');
+  dl.innerHTML = clientes.map(c => `<option value="${escapeHtml(c.nombre)}"></option>`).join('');
+}
+
+$('c_tienda').addEventListener('change', () => {
+  const match = clientes.find(c => c.nombre.toLowerCase() === $('c_tienda').value.trim().toLowerCase());
+  if(match && !$('c_contacto').value){
+    $('c_contacto').value = match.contacto || match.telefono || '';
+  }
+});
+
 $('btnGuardarConsignacion').addEventListener('click', async () => {
   const tienda = $('c_tienda').value.trim();
   const contacto = $('c_contacto').value.trim();
@@ -417,7 +446,7 @@ $('btnGuardarConsignacion').addEventListener('click', async () => {
     tienda, contacto,
     productoId,
     productoNombre: producto ? (producto.codigo + ' — ' + producto.nombre) : descripcionLibre,
-    cantidad, precioUnitario, valorTotal: cantidad * precioUnitario,
+    cantidad, cantidadDevuelta: 0, precioUnitario, valorTotal: cantidad * precioUnitario,
     estadoPago, montoPagado: (estadoPago === 'Pagado') ? cantidad * precioUnitario : 0,
     fecha, notas, createdAt: Date.now()
   });
@@ -436,26 +465,40 @@ $('btnGuardarConsignacion').addEventListener('click', async () => {
 window.marcarPago = async function(id){
   const c = consignaciones.find(x => x.id === id);
   if(!c) return;
-  const nuevo = prompt('Monto pagado hasta ahora para "' + c.tienda + '" (de ' + money(c.valorTotal) + '):', c.montoPagado.toFixed(2));
+  const neto = valorNeto(c);
+  const nuevo = prompt('Monto pagado hasta ahora para "' + c.tienda + '" (de ' + money(neto) + ' a cobrar):', c.montoPagado.toFixed(2));
   if(nuevo === null) return;
   const monto = Math.max(0, num(nuevo));
   c.montoPagado = monto;
   if(monto <= 0) c.estadoPago = 'Pendiente';
-  else if(monto >= c.valorTotal) c.estadoPago = 'Pagado';
+  else if(monto >= neto) c.estadoPago = 'Pagado';
   else c.estadoPago = 'Parcial';
   await persistConsignaciones();
   renderAll();
   showToast('Estado de pago actualizado');
 };
 
-window.marcarDevuelto = async function(id){
+window.registrarDevolucion = async function(id){
   const c = consignaciones.find(x => x.id === id);
   if(!c) return;
-  if(!confirm('¿Marcar esta entrega como devuelta (no se vendió)? Las piezas volverán a estar disponibles en taller.')) return;
-  c.estadoPago = 'Devuelto';
+  const restante = c.cantidad - cantidadDevuelta(c);
+  if(restante <= 0){ showToast('Ya no quedan piezas de este lote en la tienda'); return; }
+  const input = prompt('¿Cuántas piezas devolvió "' + c.tienda + '" sin vender? (quedan ' + restante + ' de ' + c.cantidad + ' entregadas)', '1');
+  if(input === null) return;
+  const cant = Math.round(num(input));
+  if(cant <= 0){ showToast('Ingresa una cantidad válida'); return; }
+  if(cant > restante){
+    if(!confirm('Ingresaste ' + cant + ' pero solo quedan ' + restante + ' piezas en la tienda. ¿Registrar de todos modos?')) return;
+  }
+  c.cantidadDevuelta = cantidadDevuelta(c) + cant;
+  // recalcular el estado de pago según lo que realmente queda por cobrar
+  const neto = valorNeto(c);
+  if(c.montoPagado <= 0) c.estadoPago = 'Pendiente';
+  else if(c.montoPagado >= neto && neto > 0) c.estadoPago = 'Pagado';
+  else if(neto > 0) c.estadoPago = 'Parcial';
   await persistConsignaciones();
   renderAll();
-  showToast('Entrega marcada como devuelta');
+  showToast(cant + ' pieza(s) devuelta(s) registrada(s) — vuelven al stock disponible');
 };
 
 window.deleteConsignacion = async function(id){
@@ -477,29 +520,35 @@ function renderConsignacionesTable(){
   container.innerHTML = `
     <table>
       <thead>
-        <tr><th>Tienda</th><th>Producto</th><th>Fecha</th><th class="num">Cant.</th><th class="num">Precio/u</th><th class="num">Total</th><th class="num">Pagado</th><th>Estado</th><th></th></tr>
+        <tr><th>Tienda</th><th>Producto</th><th>Fecha</th><th class="num">Entregado</th><th class="num">Devuelto</th><th class="num">Precio/u</th><th class="num">A cobrar</th><th class="num">Pagado</th><th>Estado</th><th></th></tr>
       </thead>
       <tbody>
-        ${sorted.map(c => `
+        ${sorted.map(c => {
+          const devuelta = cantidadDevuelta(c);
+          const neto = cantidadNeta(c);
+          const totalCobrar = valorNeto(c);
+          const totalmenteDevuelto = neto === 0;
+          return `
           <tr>
             <td class="name">${escapeHtml(c.tienda)}${c.contacto ? `<span class="sub">${escapeHtml(c.contacto)}</span>` : ''}</td>
             <td class="date">${escapeHtml(c.productoNombre)}</td>
             <td class="date">${new Date(c.fecha).toLocaleDateString('es-BO', {day:'2-digit', month:'short', year:'numeric'})}</td>
             <td class="num">${c.cantidad}</td>
+            <td class="num">${devuelta > 0 ? devuelta : '-'}</td>
             <td class="num">${money(c.precioUnitario)}</td>
-            <td class="num">${money(c.valorTotal)}</td>
+            <td class="num">${money(totalCobrar)}</td>
             <td class="num">${money(c.montoPagado)}</td>
-            <td><span class="estado-tag ${c.estadoPago}">${c.estadoPago}</span></td>
+            <td>${totalmenteDevuelto ? `<span class="estado-tag Devuelto">Devuelto</span>` : `<span class="estado-tag ${c.estadoPago}">${c.estadoPago}</span>`}</td>
             <td>
               <div class="row-actions">
                 <button class="icon-btn pdf" title="Exportar comprobante PDF" onclick="exportComprobante('${c.id}')">PDF</button>
-                ${c.estadoPago !== 'Devuelto' ? `<button class="icon-btn pay" title="Actualizar pago" onclick="marcarPago('${c.id}')">Bs</button>` : ''}
-                ${c.estadoPago !== 'Devuelto' && c.estadoPago !== 'Pagado' ? `<button class="icon-btn" title="Marcar devuelto" onclick="marcarDevuelto('${c.id}')">↺</button>` : ''}
+                ${!totalmenteDevuelto ? `<button class="icon-btn pay" title="Actualizar pago" onclick="marcarPago('${c.id}')">Bs</button>` : ''}
+                ${!totalmenteDevuelto ? `<button class="icon-btn" title="Registrar devolución de piezas" onclick="registrarDevolucion('${c.id}')">↺</button>` : ''}
                 <button class="icon-btn" title="Eliminar" onclick="deleteConsignacion('${c.id}')">✕</button>
               </div>
             </td>
           </tr>
-        `).join('')}
+        `;}).join('')}
       </tbody>
     </table>`;
 }
@@ -514,7 +563,8 @@ function renderTiendasResumen(){
   consignaciones.forEach(cc => {
     if(!porTienda[cc.tienda]) porTienda[cc.tienda] = { piezas:0, valorTotal:0, pagado:0, activas:0 };
     const t = porTienda[cc.tienda];
-    if(cc.estadoPago !== 'Devuelto'){ t.piezas += cc.cantidad; t.valorTotal += cc.valorTotal; t.pagado += cc.montoPagado; t.activas++; }
+    const neto = cantidadNeta(cc);
+    if(neto > 0){ t.piezas += neto; t.valorTotal += valorNeto(cc); t.pagado += cc.montoPagado; t.activas++; }
   });
   const nombres = Object.keys(porTienda).sort((a,b)=> (porTienda[b].valorTotal-porTienda[b].pagado) - (porTienda[a].valorTotal-porTienda[a].pagado));
   c.innerHTML = nombres.map(nombre => {
@@ -532,12 +582,13 @@ function renderTiendasResumen(){
 }
 
 function renderStats(){
-  const activas = consignaciones.filter(c => c.estadoPago !== 'Devuelto');
-  const entregado = activas.reduce((a,c)=> a + c.cantidad, 0);
-  const valorTotal = activas.reduce((a,c)=> a + c.valorTotal, 0);
-  const cobrado = activas.reduce((a,c)=> a + c.montoPagado, 0);
+  const entregado = consignaciones.reduce((a,c)=> a + cantidadNeta(c), 0);
+  const devuelto = consignaciones.reduce((a,c)=> a + cantidadDevuelta(c), 0);
+  const valorTotal = consignaciones.reduce((a,c)=> a + valorNeto(c), 0);
+  const cobrado = consignaciones.reduce((a,c)=> a + c.montoPagado, 0);
   const pendiente = valorTotal - cobrado;
   $('statEntregado').textContent = entregado;
+  $('statDevuelto').textContent = devuelto;
   $('statValorTotal').textContent = money(valorTotal);
   $('statPendienteCobro').textContent = money(pendiente);
   $('statCobrado').textContent = money(cobrado);
@@ -578,8 +629,9 @@ window.exportComprobante = function(id){
   doc.text('Producto: ' + c.productoNombre, 14, y); y += 6;
   doc.text('Fecha de entrega: ' + new Date(c.fecha).toLocaleDateString('es-BO'), 14, y); y += 6;
   doc.text('Cantidad entregada: ' + c.cantidad, 14, y); y += 6;
+  if(cantidadDevuelta(c) > 0){ doc.text('Piezas devueltas sin vender: ' + cantidadDevuelta(c), 14, y); y += 6; }
   doc.text('Precio pactado por unidad: ' + money(c.precioUnitario), 14, y); y += 6;
-  doc.text('Estado de pago: ' + c.estadoPago, 14, y); y += 6;
+  doc.text('Estado de pago: ' + (cantidadNeta(c) === 0 ? 'Devuelto por completo' : c.estadoPago), 14, y); y += 6;
   if(c.notas){
     doc.text('Notas:', 14, y); y += 5;
     const lines = doc.splitTextToSize(c.notas, 180);
@@ -588,7 +640,7 @@ window.exportComprobante = function(id){
   }
   y += 8;
   doc.setFontSize(14); doc.setTextColor(255,107,53); doc.setFont(undefined, 'bold');
-  doc.text('VALOR TOTAL DEL LOTE: ' + money(c.valorTotal), 14, y);
+  doc.text('VALOR A COBRAR: ' + money(valorNeto(c)), 14, y);
   doc.setFont(undefined, 'normal');
 
   pdfFooter(doc);
@@ -606,28 +658,28 @@ $('btnReporteConsignacionesPDF').addEventListener('click', () => {
   const sorted = [...consignaciones].sort((a,b)=> b.fecha - a.fecha);
   const rows = sorted.map(c => [
     c.tienda, c.productoNombre, new Date(c.fecha).toLocaleDateString('es-BO'),
-    c.cantidad, money(c.precioUnitario), money(c.valorTotal), money(c.montoPagado), c.estadoPago
+    c.cantidad, cantidadDevuelta(c) || '-', money(c.precioUnitario), money(valorNeto(c)), money(c.montoPagado),
+    cantidadNeta(c) === 0 ? 'Devuelto' : c.estadoPago
   ]);
 
   doc.autoTable({
     startY: 38,
-    head: [['Tienda', 'Producto', 'Fecha', 'Cant.', 'Precio/u', 'Total', 'Pagado', 'Estado']],
+    head: [['Tienda', 'Producto', 'Fecha', 'Entreg.', 'Devuelto', 'Precio/u', 'A cobrar', 'Pagado', 'Estado']],
     body: rows,
     styles: { fontSize: 7.5, cellPadding: 3 },
     headStyles: { fillColor: [36, 34, 32] },
-    columnStyles: { 3:{halign:'right'}, 4:{halign:'right'}, 5:{halign:'right'}, 6:{halign:'right'} }
+    columnStyles: { 3:{halign:'right'}, 4:{halign:'right'}, 5:{halign:'right'}, 6:{halign:'right'}, 7:{halign:'right'} }
   });
 
   const finalY = doc.lastAutoTable.finalY + 10;
-  const activas = consignaciones.filter(c => c.estadoPago !== 'Devuelto');
-  const valorTotal = activas.reduce((a,c)=> a + c.valorTotal, 0);
-  const cobrado = activas.reduce((a,c)=> a + c.montoPagado, 0);
+  const valorTotal = consignaciones.reduce((a,c)=> a + valorNeto(c), 0);
+  const cobrado = consignaciones.reduce((a,c)=> a + c.montoPagado, 0);
 
   doc.setFontSize(10); doc.setTextColor(30); doc.setFont(undefined, 'bold');
   doc.text('Resumen general', 14, finalY);
   doc.setFont(undefined, 'normal');
-  doc.text('Consignaciones activas: ' + activas.length, 14, finalY + 6);
-  doc.text('Valor total en consignación: ' + money(valorTotal), 14, finalY + 12);
+  doc.text('Registros de consignación: ' + consignaciones.length, 14, finalY + 6);
+  doc.text('Valor total a cobrar (neto de devoluciones): ' + money(valorTotal), 14, finalY + 12);
   doc.text('Cobrado: ' + money(cobrado), 14, finalY + 18);
   doc.text('Pendiente de cobro: ' + money(valorTotal - cobrado), 14, finalY + 24);
 

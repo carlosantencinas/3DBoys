@@ -181,6 +181,7 @@
       <a href="index.html">← Panel principal</a>
       <a href="productos.html" class="current">Productos</a>
       <a href="consignaciones.html">Consignaciones</a>
+      <a href="clientes.html">Clientes</a>
     </div>
   </header>
 
@@ -341,10 +342,6 @@ function vendidoDirectoProducto(prodId){
   const jobIds = jobsDeProducto(prodId).map(j => j.id);
   return sales.filter(s => jobIds.includes(s.jobId)).reduce((a,s)=> a + (s.cantidad || 1), 0);
 }
-function consignadoActivoProducto(prodId){
-  return (productos.find(p=>p.id===prodId)?.__consignadoActivo) || 0; // se recalcula en renderAll con datos de consignaciones si están cargadas
-}
-
 /* Nota: las consignaciones viven en consignaciones.html y se guardan en el mismo documento
    bajo el campo "consignaciones". Aquí las leemos solo para calcular stock disponible. */
 let consignaciones = [];
@@ -356,7 +353,7 @@ function recomputeConsignaciones(){
 }
 
 function consignadoActivo(prodId){
-  return consignaciones.filter(c => c.productoId === prodId && c.estadoPago !== 'Devuelto').reduce((a,c)=> a + c.cantidad, 0);
+  return consignaciones.filter(c => c.productoId === prodId).reduce((a,c)=> a + Math.max(c.cantidad - (c.cantidadDevuelta || 0), 0), 0);
 }
 function disponibleProducto(prodId){
   return Math.max(vendiblesProducto(prodId) - vendidoDirectoProducto(prodId) - consignadoActivo(prodId), 0);
